@@ -9,16 +9,15 @@ const cronjob = require("node-cron");
 const fetch = require("node-fetch");
 const captchaRoute = require("./captcha.js");
 const visionRoute = require("./vision.js");
-const admin = require('./firebaseAdminSetup');
-
+const admin = require("./firebaseAdminSetup");
 
 require("dotenv").config();
 
 const app = express();
-const db = admin.firestore();
+// const db = admin.firestore();
 
-app.use(express.json({ limit: '100mb' }));
-app.use(express.urlencoded({ limit: '100mb', extended: true }));
+app.use(express.json({ limit: "100mb" }));
+app.use(express.urlencoded({ limit: "100mb", extended: true }));
 app.use(cors()); // Enable CORS for cross-domain requests
 app.use(express.json());
 app.use("/captcha", captchaRoute);
@@ -49,33 +48,33 @@ app.use((req, res, next) => {
   }
 });
 
-// Define a route for the cron job
-app.get("/cron-job-route", (req, res) => {
-  const serverUrl = "https://portfolio-backend-3jb1.onrender.com";
+// // Define a route for the cron job
+// app.get("/cron-job-route", (req, res) => {
+//   const serverUrl = "https://portfolio-backend-3jb1.onrender.com";
 
-  console.log(`Server ${serverUrl} is alive.`);
+//   console.log(`Server ${serverUrl} is alive.`);
 
-  res.sendStatus(200);
-});
+//   res.sendStatus(200);
+// });
 
-// Schedule the cron job to run every 12 minutes
-cronjob.schedule("*/12 * * * *", () => {
-  // Send a GET request to the cron job route to execute the logic
-  const cronJobUrl =
-    "https://portfolio-backend-3jb1.onrender.com/cron-job-route";
+// // Schedule the cron job to run every 12 minutes
+// cronjob.schedule("*/12 * * * *", () => {
+//   // Send a GET request to the cron job route to execute the logic
+//   const cronJobUrl =
+//     "https://portfolio-backend-3jb1.onrender.com/cron-job-route";
 
-  fetch(cronJobUrl)
-    .then((response) => {
-      if (response.ok) {
-        console.log("Cron job executed successfully.");
-      } else {
-        throw new Error("Request failed with status code " + response.status);
-      }
-    })
-    .catch((error) => {
-      console.log("Error executing cron job:", error.message);
-    });
-});
+//   fetch(cronJobUrl)
+//     .then((response) => {
+//       if (response.ok) {
+//         console.log("Cron job executed successfully.");
+//       } else {
+//         throw new Error("Request failed with status code " + response.status);
+//       }
+//     })
+//     .catch((error) => {
+//       console.log("Error executing cron job:", error.message);
+//     });
+// });
 
 // Create a Nodemailer transporter
 const transporter = nodemailer.createTransport({
@@ -94,13 +93,13 @@ const twilioClient = twilio(
 );
 
 // Create a MySQL connection pool
-const pool = mysql.createPool({
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-});
+// const pool = mysql.createPool({
+//   host: process.env.DB_HOST,
+//   port: process.env.DB_PORT,
+//   user: process.env.DB_USER,
+//   password: process.env.DB_PASSWORD,
+//   database: process.env.DB_NAME,
+// });
 
 // Recursive function to attempt to send 5 times
 const sendEmail = async (mailOptions, email, retries = 0) => {
@@ -119,11 +118,14 @@ const sendEmail = async (mailOptions, email, retries = 0) => {
       // make recursive call to sendEmail
       return sendEmail(mailOptions, email, retries + 1);
     } else {
-      // Send SMS notification
-      const smsMessage = `Hey Adam, someone just failed sending an email to you after 5 attempts. Email: ${email}. Check your database to see more information.`;
-      sendSMS(smsMessage);
-      // Store email in the database
-      saveEmailToDatabase(mailOptions);
+      // // Send SMS notification
+      // const smsMessage = `Hey Adam, someone just failed sending an email to you after 5 attempts. Email: ${email}. Check your database to see more information.`;
+      // sendSMS(smsMessage);
+      // // Store email in the database
+      // saveEmailToDatabase(mailOptions);
+
+      // send error
+      throw error;
     }
   }
 };
@@ -181,30 +183,32 @@ app.post(
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { name, email, message } = req.body;
+    const { name, category, email, phone, message } = req.body;
 
     // Compose the email message
     const mailOptions = {
       from: email,
       to: process.env.EMAIL_RECIPIENT,
-      subject: "New Portfolio Form Submission",
-      text: `Name: ${name}\nEmail: ${email}\n\nMessage: ${message}`,
+      subject: `${category.toUpperCase()} Enquiry Form Submission`,
+      text: `Name: ${name}\nEmail: ${email}\nPhone: ${phone}\n\nMessage: ${message}`,
     };
 
-    res.sendStatus(200);
+    // when you have db connection uncomment the below line
+    // res.sendStatus(200);
 
     try {
       // Send the email asynchronously
       await sendEmail(mailOptions, email);
+      res.status(200).json({ message: "Email sent successfully" });
     } catch (error) {
       console.log(error);
-      res.status(500).send("Failed to send email.");
+      res.status(500).json({ message: "Error sending email" });
     }
   }
 );
 
 // Start the server
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 3001;
 app.listen(port, () => {
   console.log(`Server started on port ${port}`);
 });
