@@ -8,8 +8,7 @@ const mysql = require("mysql");
 const cronjob = require("node-cron");
 const fetch = require("node-fetch");
 const captchaRoute = require("./captcha.js");
-const visionRoute = require("./vision.js");
-const admin = require("./firebaseAdminSetup");
+// const admin = require("./firebaseAdminSetup");
 
 require("dotenv").config();
 
@@ -21,7 +20,6 @@ app.use(express.urlencoded({ limit: "100mb", extended: true }));
 app.use(cors()); // Enable CORS for cross-domain requests
 app.use(express.json());
 app.use("/captcha", captchaRoute);
-app.use("/vision", visionRoute);
 
 app.set("trust proxy", 4);
 
@@ -37,11 +35,7 @@ const limiter = rateLimit({
 
 // Apply the rate limiter to all routes except the cron job route
 app.use((req, res, next) => {
-  if (
-    req.path === "/cron-job-route" ||
-    req.path === "/captcha/verify" ||
-    req.path === "/vision"
-  ) {
+  if (req.path === "/cron-job-route" || req.path === "/captcha/verify") {
     next();
   } else {
     limiter(req, res, next);
@@ -86,11 +80,11 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// Create a Twilio client
-const twilioClient = twilio(
-  process.env.TWILIO_ACCOUNT_SID,
-  process.env.TWILIO_AUTH_TOKEN
-);
+// // Create a Twilio client
+// const twilioClient = twilio(
+//   process.env.TWILIO_ACCOUNT_SID,
+//   process.env.TWILIO_AUTH_TOKEN
+// );
 
 // Create a MySQL connection pool
 // const pool = mysql.createPool({
