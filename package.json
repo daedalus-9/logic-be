@@ -1,10 +1,12 @@
 {
-  "name": "portfolio-backend",
+  "name": "supernova-backend",
   "version": "1.0.0",
-  "description": "backend for portfolio",
+  "description": "backend for supernova",
   "main": "app.js",
   "scripts": {
-    "server": "nodemon server"
+    "start": "node app.js",  
+    "dev": "nodemon app.js", 
+    "build": "echo 'No build step required'" 
   },
   "author": "Adam Young",
   "license": "ISC",
