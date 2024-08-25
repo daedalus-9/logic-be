@@ -4,9 +4,9 @@
   "description": "backend for supernova",
   "main": "app.js",
   "scripts": {
-    "start": "node app.js",  
-    "dev": "nodemon app.js", 
-    "build": "echo 'No build step required'" 
+    "start": "node app.js",
+    "dev": "nodemon app.js",
+    "build": "echo 'No build step required'"
   },
   "author": "Adam Young",
   "license": "ISC",
@@ -17,6 +17,7 @@
     "express": "^4.18.2",
     "express-rate-limit": "^6.7.0",
     "express-validator": "^7.0.1",
+    "firebase": "^10.13.0",
     "firebase-admin": "^11.10.1",
     "mysql": "^2.18.1",
     "node-cron": "^3.0.2",
