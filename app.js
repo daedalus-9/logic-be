@@ -8,20 +8,21 @@ const mysql = require("mysql");
 const cronjob = require("node-cron");
 const fetch = require("node-fetch");
 const captchaRoute = require("./captcha.js");
-// const admin = require("./firebaseAdminSetup");
+const { app, db } = require("./firebaseConfig.js");
+const { doc, collection, setDoc } = require("firebase/firestore");
 
 require("dotenv").config();
 
-const app = express();
+const appExpress = express();
 // const db = admin.firestore();
 
-app.use(express.json({ limit: "100mb" }));
-app.use(express.urlencoded({ limit: "100mb", extended: true }));
-app.use(cors()); // Enable CORS for cross-domain requests
-app.use(express.json());
-app.use("/captcha", captchaRoute);
+appExpress.use(express.json({ limit: "100mb" }));
+appExpress.use(express.urlencoded({ limit: "100mb", extended: true }));
+appExpress.use(cors()); // Enable CORS for cross-domain requests
+appExpress.use(express.json());
+appExpress.use("/captcha", captchaRoute);
 
-app.set("trust proxy", 4);
+appExpress.set("trust proxy", 4);
 
 // Create a rate limiter
 const limiter = rateLimit({
@@ -33,8 +34,8 @@ const limiter = rateLimit({
   message: "Too many requests from this IP, please try again after 24 hours.",
 });
 
-// Apply the rate limiter to all routes except the cron job route
-app.use((req, res, next) => {
+// appExpressly the rate limiter to all routes except the cron job route
+appExpress.use((req, res, next) => {
   if (req.path === "/cron-job-route" || req.path === "/captcha/verify") {
     next();
   } else {
@@ -42,8 +43,57 @@ app.use((req, res, next) => {
   }
 });
 
+// Define the promotion route
+appExpress.post(
+  "/promotion",
+  [
+    body("fullname")
+      .trim()
+      .notEmpty()
+      .withMessage("Full name is required")
+      .escape(),
+    body("email")
+      .trim()
+      .isEmail()
+      .withMessage("Invalid email address")
+      .escape(),
+    body("phone")
+      .trim()
+      .notEmpty()
+      .withMessage("Phone number is required")
+      .escape(),
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { fullname, email, phone } = req.body;
+
+    try {
+      // Reference to the Firestore collection
+      const colRef = collection(db, "promotions");
+      const docRef = doc(colRef); // Create a new document reference
+
+      // Save the data
+      await setDoc(docRef, {
+        fullname,
+        email,
+        phone,
+        createdAt: new Date(), // Use JavaScript Date object
+      });
+
+      res.status(200).json({ message: "Promotion data saved successfully" });
+    } catch (error) {
+      console.error("Error saving promotion data:", error);
+      res.status(500).json({ message: "Error saving data to Firestore" });
+    }
+  }
+);
+
 // // Define a route for the cron job
-// app.get("/cron-job-route", (req, res) => {
+// appExpress.get("/cron-job-route", (req, res) => {
 //   const serverUrl = "https://portfolio-backend-3jb1.onrender.com";
 
 //   console.log(`Server ${serverUrl} is alive.`);
@@ -156,7 +206,7 @@ const saveEmailToDatabase = (mailOptions) => {
 };
 
 // Define a route to handle the email sending
-app.post(
+appExpress.post(
   "/",
   [
     body("name").trim().notEmpty().withMessage("Name is required").escape(),
@@ -203,6 +253,6 @@ app.post(
 
 // Start the server
 const port = process.env.PORT || 3001;
-app.listen(port, () => {
+appExpress.listen(port, () => {
   console.log(`Server started on port ${port}`);
 });
