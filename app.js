@@ -182,13 +182,68 @@ const transporter = nodemailer.createTransport({
 //   database: process.env.DB_NAME,
 // });
 
-// Function to send email receipt
 const sendEmailReceipt = async (to, name, phone) => {
+  // Define the HTML content for the email
+  const htmlContent = `
+    <html>
+    <head>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          margin: 20px;
+          padding: 0;
+          color: #333;
+        }
+        .container {
+          max-width: 600px;
+          margin: 0 auto;
+          padding: 20px;
+          border: 1px solid #ddd;
+          border-radius: 8px;
+          background-color: #f9f9f9;
+        }
+        h1 {
+          color: #007bff;
+        }
+        p {
+          line-height: 1.5;
+        }
+        .footer {
+          margin-top: 20px;
+          font-size: 0.9em;
+          color: #777;
+        }
+        .logo {
+          width: 100px;
+          display: block;
+          margin: 0 auto;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <img src="https://firebasestorage.googleapis.com/v0/b/supernova-dental.appspot.com/o/favicon.ico?alt=media&token=ec16f0f4-6447-4d51-8f75-884db512dd75" alt="Supernova Dental Logo" class="logo" />
+        <h1>Thank You for Signing Up!</h1>
+        <p>Dear ${name},</p>
+        <p>Thank you for signing up for our promotion at Supernova Dental! We have received the following details from you:</p>
+        <p><strong>Full Name:</strong> ${name}</p>
+        <p><strong>Phone Number:</strong> ${phone}</p>
+        <p>We look forward to seeing you soon.</p>
+        <p>Best regards,<br>The Supernova Dental Team</p>
+        <div class="footer">
+          <p>If you have any questions, feel free to contact us at <a href="mailto:info@supernovadental.com">info@supernovadental.com</a>.</p>
+          <p>Marsh Lane, Huntworth, Bridgwater, Alliance Building TA6 6LQ</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
   const mailOptions = {
     from: process.env.EMAIL_USER,
     to,
     subject: "Supernova Dental Promotion Receipt",
-    text: `Dear ${name},\n\nThank you for signing up for our promotion at Supernova Dental! We have received the following details from you:\n\nFull Name: ${name}\nPhone Number: ${phone}\n\nWe look forward to seeing you soon.\n\nBest regards,\nSupernova Dental Team`,
+    html: htmlContent, // Use HTML content
   };
 
   try {
