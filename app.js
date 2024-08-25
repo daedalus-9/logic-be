@@ -62,6 +62,10 @@ appExpress.post(
       .notEmpty()
       .withMessage("Phone number is required")
       .escape(),
+    body("receipts")
+      .optional()
+      .isBoolean()
+      .withMessage("Receipts must be a boolean value"),
   ],
   async (req, res) => {
     const errors = validationResult(req);
@@ -69,7 +73,7 @@ appExpress.post(
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { fullname, email, phone } = req.body;
+    const { fullname, email, phone, receipts } = req.body;
 
     try {
       // Reference to the Firestore collection
@@ -83,6 +87,11 @@ appExpress.post(
         phone,
         createdAt: new Date(), // Use JavaScript Date object
       });
+
+      // If the checkbox is checked, send an email receipt
+      if (receipts) {
+        await sendEmailReceipt(email, fullname, phone);
+      }
 
       res.status(200).json({ message: "Promotion data saved successfully" });
     } catch (error) {
@@ -143,6 +152,23 @@ const transporter = nodemailer.createTransport({
 //   password: process.env.DB_PASSWORD,
 //   database: process.env.DB_NAME,
 // });
+
+// Function to send email receipt
+const sendEmailReceipt = async (to, name, phone) => {
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to,
+    subject: "Supernova Dental Promotion Receipt",
+    text: `Dear ${name},\n\nThank you for signing up for our promotion at Supernova Dental! We have received the following details from you:\n\nFull Name: ${name}\nPhone Number: ${phone}\n\nWe look forward to seeing you soon.\n\nBest regards,\nSupernova Dental Team`,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log("Receipt email sent successfully");
+  } catch (error) {
+    console.error("Error sending email:", error);
+  }
+};
 
 // Recursive function to attempt to send 5 times
 const sendEmail = async (mailOptions, email, retries = 0) => {
