@@ -93,32 +93,32 @@ appExpress.post(
 );
 
 // // Define a route for the cron job
-// appExpress.get("/cron-job-route", (req, res) => {
-//   const serverUrl = "https://portfolio-backend-3jb1.onrender.com";
+appExpress.get("/cron-job-route", (req, res) => {
+  const serverUrl = "https://portfolio-backend-3jb1.onrender.com";
 
-//   console.log(`Server ${serverUrl} is alive.`);
+  console.log(`Server ${serverUrl} is alive.`);
 
-//   res.sendStatus(200);
-// });
+  res.sendStatus(200);
+});
 
-// // Schedule the cron job to run every 12 minutes
-// cronjob.schedule("*/12 * * * *", () => {
-//   // Send a GET request to the cron job route to execute the logic
-//   const cronJobUrl =
-//     "https://portfolio-backend-3jb1.onrender.com/cron-job-route";
+// Schedule the cron job to run every 12 minutes
+cronjob.schedule("*/12 * * * *", () => {
+  // Send a GET request to the cron job route to execute the logic
+  const cronJobUrl =
+    "https://portfolio-backend-3jb1.onrender.com/cron-job-route";
 
-//   fetch(cronJobUrl)
-//     .then((response) => {
-//       if (response.ok) {
-//         console.log("Cron job executed successfully.");
-//       } else {
-//         throw new Error("Request failed with status code " + response.status);
-//       }
-//     })
-//     .catch((error) => {
-//       console.log("Error executing cron job:", error.message);
-//     });
-// });
+  fetch(cronJobUrl)
+    .then((response) => {
+      if (response.ok) {
+        console.log("Cron job executed successfully.");
+      } else {
+        throw new Error("Request failed with status code " + response.status);
+      }
+    })
+    .catch((error) => {
+      console.log("Error executing cron job:", error.message);
+    });
+});
 
 // Create a Nodemailer transporter
 const transporter = nodemailer.createTransport({
