@@ -73,7 +73,7 @@ appExpress.post(
 
     try {
       // Reference to the Firestore collection
-      const colRef = collection(db, "promotions");
+      const colRef = collection(db, "promotion");
       const docRef = doc(colRef); // Create a new document reference
 
       // Save the data
@@ -104,8 +104,7 @@ appExpress.get("/cron-job-route", (req, res) => {
 // Schedule the cron job to run every 12 minutes
 cronjob.schedule("*/12 * * * *", () => {
   // Send a GET request to the cron job route to execute the logic
-  const cronJobUrl =
-    "https://supernova-enquiry-be.onrender.com/cron-job-route";
+  const cronJobUrl = "https://supernova-enquiry-be.onrender.com/cron-job-route";
 
   fetch(cronJobUrl)
     .then((response) => {
