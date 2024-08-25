@@ -74,7 +74,8 @@ appExpress.post(
       .isBoolean()
       .withMessage("Receipts must be a boolean value"),
   ],
-  async (req, res) => {
+  async (req, res, next) => {
+    // added 'next' for error handling
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
@@ -91,9 +92,7 @@ appExpress.post(
       const emailSnapshot = await getDocs(emailQuery);
 
       if (!emailSnapshot.empty) {
-        return res
-          .status(400)
-          .json({ message: "Email is already in use. Please use another." });
+        throw new Error("Email is already in use. Please use another.");
       }
 
       // Check if phone number already exists
@@ -101,9 +100,7 @@ appExpress.post(
       const phoneSnapshot = await getDocs(phoneQuery);
 
       if (!phoneSnapshot.empty) {
-        return res.status(400).json({
-          message: "Phone number is already in use. Please use another.",
-        });
+        throw new Error("Phone number is already in use. Please use another.");
       }
 
       // Create a new document reference
@@ -125,7 +122,9 @@ appExpress.post(
       res.status(200).json({ message: "Promotion data saved successfully" });
     } catch (error) {
       console.error("Error saving promotion data:", error);
-      res.status(500).json({ message: "Error saving data to Firestore" });
+
+      // Use next(error) to pass the error to the error-handling middleware
+      next(error);
     }
   }
 );
