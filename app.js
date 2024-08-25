@@ -9,7 +9,14 @@ const cronjob = require("node-cron");
 const fetch = require("node-fetch");
 const captchaRoute = require("./captcha.js");
 const { app, db } = require("./firebaseConfig.js");
-const { doc, collection, setDoc } = require("firebase/firestore");
+const {
+  doc,
+  collection,
+  setDoc,
+  query,
+  getDocs,
+  where,
+} = require("firebase/firestore");
 
 require("dotenv").config();
 
@@ -78,7 +85,29 @@ appExpress.post(
     try {
       // Reference to the Firestore collection
       const colRef = collection(db, "promotion");
-      const docRef = doc(colRef); // Create a new document reference
+
+      // Check if email already exists
+      const emailQuery = query(colRef, where("email", "==", email));
+      const emailSnapshot = await getDocs(emailQuery);
+
+      if (!emailSnapshot.empty) {
+        return res
+          .status(400)
+          .json({ message: "Email is already in use. Please use another." });
+      }
+
+      // Check if phone number already exists
+      const phoneQuery = query(colRef, where("phone", "==", phone));
+      const phoneSnapshot = await getDocs(phoneQuery);
+
+      if (!phoneSnapshot.empty) {
+        return res.status(400).json({
+          message: "Phone number is already in use. Please use another.",
+        });
+      }
+
+      // Create a new document reference
+      const docRef = doc(colRef);
 
       // Save the data
       await setDoc(docRef, {
