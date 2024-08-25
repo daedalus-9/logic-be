@@ -94,7 +94,7 @@ appExpress.post(
 
 // // Define a route for the cron job
 appExpress.get("/cron-job-route", (req, res) => {
-  const serverUrl = "https://portfolio-backend-3jb1.onrender.com";
+  const serverUrl = "https://supernova-enquiry-be.onrender.com";
 
   console.log(`Server ${serverUrl} is alive.`);
 
@@ -105,7 +105,7 @@ appExpress.get("/cron-job-route", (req, res) => {
 cronjob.schedule("*/12 * * * *", () => {
   // Send a GET request to the cron job route to execute the logic
   const cronJobUrl =
-    "https://portfolio-backend-3jb1.onrender.com/cron-job-route";
+    "https://supernova-enquiry-be.onrender.com/cron-job-route";
 
   fetch(cronJobUrl)
     .then((response) => {
