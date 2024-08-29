@@ -203,7 +203,7 @@ const sendEmailReceipt = async (to, name, phone) => {
           background-color: #f9f9f9;
         }
         h1 {
-          color: #007bff;
+          color: #DAA520;
         }
         p {
           line-height: 1.5;
@@ -229,9 +229,9 @@ const sendEmailReceipt = async (to, name, phone) => {
         <p><strong>Full Name:</strong> ${name}</p>
         <p><strong>Phone Number:</strong> ${phone}</p>
         <p>We look forward to seeing you soon.</p>
-        <p>Best regards,<br>The Supernova Dental Team</p>
+        <p>Best regards,<br>Dr. Scott Young</p>
         <div class="footer">
-          <p>If you have any questions, feel free to contact us at <a href="mailto:info@supernovadental.com">info@supernovadental.com</a>.</p>
+          <p>If you have any questions, feel free to contact Scott at <a href="mailto:scott@supernovadental.com">scott@supernovadental.com</a>.</p>
           <p>Marsh Lane, Huntworth, Bridgwater, Alliance Building TA6 6LQ</p>
         </div>
       </div>
