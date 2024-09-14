@@ -130,30 +130,40 @@ appExpress.post(
   }
 );
 
-// // Define a route for the cron job
+// Retry function to handle retries
+const retryFetch = async (url, retries = 3, backoff = 5000) => {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Request failed with status ${response.status}`);
+    }
+    console.log(`Request to ${url} succeeded.`);
+  } catch (error) {
+    console.log(`Error during fetch: ${error.message}`);
+    if (retries > 0) {
+      console.log(
+        `Retrying in ${backoff / 1000} seconds... (${retries} retries left)`
+      );
+      setTimeout(() => retryFetch(url, retries - 1, backoff), backoff);
+    } else {
+      console.log(`All retries exhausted. Could not reach ${url}.`);
+    }
+  }
+};
+
+// Updated cron job route with retry logic
 appExpress.get("/cron-job-route", (req, res) => {
   const serverUrl = "https://supernova-enquiry-be.onrender.com";
 
-  console.log(`Server ${serverUrl} is alive.`);
+  console.log(`Attempting to ping server: ${serverUrl}`);
 
-  res.sendStatus(200);
-});
-
-// Schedule the cron job to run every 12 minutes
-cronjob.schedule("*/12 * * * *", () => {
-  // Send a GET request to the cron job route to execute the logic
-  const cronJobUrl = "https://supernova-enquiry-be.onrender.com/cron-job-route";
-
-  fetch(cronJobUrl)
-    .then((response) => {
-      if (response.ok) {
-        console.log("Cron job executed successfully.");
-      } else {
-        throw new Error("Request failed with status code " + response.status);
-      }
+  retryFetch(serverUrl)
+    .then(() => {
+      res.sendStatus(200);
     })
     .catch((error) => {
-      console.log("Error executing cron job:", error.message);
+      console.log("Failed to keep server alive:", error.message);
+      res.sendStatus(500);
     });
 });
 
