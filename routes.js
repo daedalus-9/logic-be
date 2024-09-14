@@ -1,7 +1,6 @@
 // routes.js
 const { body, validationResult } = require("express-validator");
 const { sendEmailReceipt } = require("./email");
-const express = require("express");
 // const {
 //   setDoc,
 //   getDocs,
@@ -12,9 +11,8 @@ const express = require("express");
 // const db = require("./firebaseConfig");
 require("dotenv").config();
 
-const appExpress = express();
 
-const defineRoutes = (app) => {
+const defineRoutes = (appExpress) => {
   // Promotion route
 //   app.post(
 //     "/promotion",
