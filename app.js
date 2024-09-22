@@ -3,7 +3,8 @@ const cors = require("cors");
 const rateLimit = require("express-rate-limit");
 require("dotenv").config();
 
-const defineRoutes = require("./routes"); 
+const defineRoutes = require("./routes");
+const keepAlive = require("./crons");
 
 const appExpress = express();
 
@@ -34,6 +35,9 @@ appExpress.use((req, res, next) => {
 
 // Define the application routes
 defineRoutes(appExpress);
+
+// Cronjob to keep the server alive
+keepAlive();
 
 // Start the server
 const port = process.env.PORT || 3001;
