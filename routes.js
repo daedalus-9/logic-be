@@ -1,14 +1,16 @@
 // routes.js
 const { body, validationResult } = require("express-validator");
 const { sendEmailReceipt, sendEmail } = require("./email");
-// const {
-//   setDoc,
-//   getDocs,
-//   where,
-//   collection,
-//   query,
-// } = require("firebase/firestore");
-// const db = require("./firebaseConfig");
+const {
+  doc,
+  setDoc,
+  getDocs,
+  where,
+  collection,
+  query,
+} = require("firebase/firestore");
+const { db } = require("./firebaseConfig");
+const { retryFetch } = require("./utils");
 require("dotenv").config();
 
 const defineRoutes = (appExpress) => {
@@ -79,14 +81,14 @@ const defineRoutes = (appExpress) => {
   //   );
 
   // Cron job route to keep server alive
-  //   app.get("/cron-job-route", (req, res) => {
-  //     const serverUrl = process.env.SERVER_URL;
-  //     retryFetch(serverUrl)
-  //       .then(() => res.sendStatus(200))
-  //       .catch((error) =>
-  //         res.status(500).json({ message: "Error pinging server", error })
-  //       );
-  //   });
+  appExpress.get("/cron-job-route", (req, res) => {
+    const serverUrl = process.env.SERVER_URL;
+    retryFetch(serverUrl)
+      .then(() => res.sendStatus(200))
+      .catch((error) =>
+        res.status(500).json({ message: "Error pinging server", error })
+      );
+  });
 
   appExpress.post(
     "/",
@@ -127,8 +129,30 @@ const defineRoutes = (appExpress) => {
         await sendEmail(mailOptions, email);
         res.status(200).json({ message: "Email sent successfully" });
       } catch (error) {
-        console.log(error);
-        res.status(500).json({ message: "Error sending email" });
+        console.error("Error sending email:", error);
+
+        try {
+          const colRef = collection(db, "failure-enquiries");
+          const docRef = doc(colRef); // Automatically generates a new document ID
+          await setDoc(docRef, {
+            name,
+            category,
+            email,
+            phone,
+            message,
+            createdAt: new Date(),
+            error: error.message,
+          });
+        } catch (firestoreError) {
+          console.log(`"Document that failed to send email saved to Firestore",
+            Name: ${name},
+            Category: ${category},
+            Email: ${email},
+            Phone: ${phone},
+            Message: ${message},
+            createdAt: ${new Date()},`);
+          console.error("Error saving to Firestore:", firestoreError);
+        }
       }
     }
   );
