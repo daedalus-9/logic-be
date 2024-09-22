@@ -1,6 +1,6 @@
 const keepAlive = () => {
-  // Schedule the cron job to run every 12 minutes
-  cronjob.schedule("*/12 * * * *", () => {
+  // Schedule the cron job to run every 10 minutes
+  cronjob.schedule("*/10 * * * *", () => {
     // Send a GET request to the cron job route to execute the logic
     const cronJobUrl = process.env.SERVER_URL + "/cron-job-route";
 
