@@ -1,5 +1,6 @@
 // email.js
 const nodemailer = require("nodemailer");
+const { getRandomInt, wait } = require("./utils");
 require("dotenv").config();
 
 const transporter = nodemailer.createTransport({
@@ -70,6 +71,8 @@ const sendEmail = async (mailOptions, email, retries = 0) => {
       // make recursive call to sendEmail
       return sendEmail(mailOptions, email, retries + 1);
     } else {
+      console.log("Failed to send email after 5 attempts");
+
       // // Send SMS notification
       // const smsMessage = `Hey Adam, someone just failed sending an email to you after 5 attempts. Email: ${email}. Check your database to see more information.`;
       // sendSMS(smsMessage);
@@ -83,4 +86,3 @@ const sendEmail = async (mailOptions, email, retries = 0) => {
 };
 
 module.exports = { sendEmailReceipt, sendEmail };
-
