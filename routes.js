@@ -15,7 +15,7 @@ require("dotenv").config();
 
 const defineRoutes = (appExpress) => {
   // Promotion route
-  app.post(
+  appExpress.post(
     "/promotion",
     [
       body("fullname")
