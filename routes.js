@@ -33,26 +33,25 @@ const defineRoutes = (appExpress) => {
         .notEmpty()
         .withMessage("Phone number is required")
         .escape(),
-      body("receipts")
+      body("consent")
         .optional()
         .isBoolean()
-        .withMessage("Receipts must be a boolean value"),
+        .withMessage("Consent must be a boolean value"),
     ],
     async (req, res) => {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-      }
-
-      const { fullname, email, phone, receipts } = req.body;
+      const { fullname, email, phone, consent } = req.body;
 
       try {
         const colRef = collection(db, "promotion");
+
+        console.log("Checking if email and phone number are unique...");
 
         const emailQuery = query(colRef, where("email", "==", email));
         const emailSnapshot = await getDocs(emailQuery);
 
         if (!emailSnapshot.empty) {
+          console.log("Email is already in use.");
+
           return res.status(400).json({ message: "Email is already in use." });
         }
 
@@ -68,9 +67,11 @@ const defineRoutes = (appExpress) => {
         const docRef = doc(colRef);
         await setDoc(docRef, { fullname, email, phone, createdAt: new Date() });
 
-        if (receipts) {
+        if (consent) {
           await sendEmailReceipt(email, fullname, phone);
         }
+
+        console.log("Promotion data saved successfully.");
 
         res.status(200).json({ message: "Promotion data saved successfully." });
       } catch (error) {
