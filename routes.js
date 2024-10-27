@@ -46,17 +46,16 @@ const defineRoutes = (appExpress) => {
 
         console.log("Checking if email and phone number are unique...");
 
-        const emailQuery = query(colRef, where("email", "==", email));
-        const emailSnapshot = await getDocs(emailQuery);
+        // Use Promise.all to check for unique email and phone concurrently
+        const [emailSnapshot, phoneSnapshot] = await Promise.all([
+          getDocs(query(colRef, where("email", "==", email))),
+          getDocs(query(colRef, where("phone", "==", phone))),
+        ]);
 
         if (!emailSnapshot.empty) {
           console.log("Email is already in use.");
-
           return res.status(400).json({ message: "Email is already in use." });
         }
-
-        const phoneQuery = query(colRef, where("phone", "==", phone));
-        const phoneSnapshot = await getDocs(phoneQuery);
 
         if (!phoneSnapshot.empty) {
           return res
@@ -64,6 +63,7 @@ const defineRoutes = (appExpress) => {
             .json({ message: "Phone number is already in use." });
         }
 
+        // Proceed to save if both checks are successful
         const docRef = doc(colRef);
         await setDoc(docRef, { fullname, email, phone, createdAt: new Date() });
 
@@ -72,11 +72,14 @@ const defineRoutes = (appExpress) => {
         }
 
         console.log("Promotion data saved successfully.");
-
-        res.status(200).json({ message: "Promotion data saved successfully." });
+        return res
+          .status(200)
+          .json({ message: "Promotion data saved successfully." });
       } catch (error) {
         console.error("Error saving promotion data:", error);
-        res.status(500).json({ message: "Error saving data to Firestore." });
+        return res
+          .status(500)
+          .json({ message: "Error saving data to Firestore." });
       }
     }
   );
@@ -84,11 +87,21 @@ const defineRoutes = (appExpress) => {
   // Cron job route to keep server alive
   appExpress.get("/cron-job-route", (req, res) => {
     const serverUrl = process.env.SERVER_URL;
+
+    console.log(`Pinging server at: ${serverUrl}`); // Log the URL being pinged
+
     retryFetch(serverUrl)
-      .then(() => res.sendStatus(200))
-      .catch((error) =>
-        res.status(500).json({ message: "Error pinging server", error })
-      );
+      .then(() => {
+        console.log("Successfully pinged the server."); // Log success
+        res.sendStatus(200);
+      })
+      .catch((error) => {
+        console.error("Error fetching data:", error.message); // Log the error message
+        console.error(`Failed to ping server at ${serverUrl}`); // Log the URL that failed
+        res
+          .status(500)
+          .json({ message: "Error pinging server", error: error.message });
+      });
   });
 
   appExpress.post(
