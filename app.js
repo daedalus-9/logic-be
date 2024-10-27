@@ -25,13 +25,13 @@ const limiter = rateLimit({
   message: "Too many requests from this IP, please try again after 24 hours.",
 });
 
-appExpress.use((req, res, next) => {
-  if (req.path === "/cron-job-route") {
-    next();
-  } else {
-    limiter(req, res, next);
-  }
-});
+// appExpress.use((req, res, next) => {
+//   if (req.path === "/cron-job-route") {
+//     next();
+//   } else {
+//     limiter(req, res, next);
+//   }
+// });
 
 // Define the application routes
 defineRoutes(appExpress);
