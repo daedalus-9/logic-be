@@ -10,11 +10,20 @@ const wait = (ms) => {
 
 const retryFetch = async (url) => {
   try {
+    console.log(`Fetching data from ${url}`);
+
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    return response.json();
+
+    // Check if the response has JSON content
+    const contentType = response.headers.get("content-type");
+    if (contentType && contentType.includes("application/json")) {
+      return response.json();
+    } else {
+      return response.text(); // For non-JSON responses, return text
+    }
   } catch (error) {
     console.error("Error fetching data:", error);
     throw error;

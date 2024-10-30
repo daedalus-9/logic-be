@@ -84,20 +84,25 @@ const defineRoutes = (appExpress) => {
     }
   );
 
-  // Cron job route to keep server alive
-  appExpress.get("/cron-job-route", (req, res) => {
-    const serverUrl = process.env.SERVER_URL;
+  // Health check route (simple response, no retryFetch)
+  appExpress.get("/health", (req, res) => {
+    res.sendStatus(200);
+  });
 
-    console.log(`Pinging server at: ${serverUrl}`); // Log the URL being pinged
+  // Cron job route
+  appExpress.get("/cron-job-route", (req, res) => {
+    const serverUrl = process.env.SERVER_URL + "/health"; // Ping /health
+
+    console.log(`Pinging server at: ${serverUrl}`);
 
     retryFetch(serverUrl)
       .then(() => {
-        console.log("Successfully pinged the server."); // Log success
+        console.log("Successfully pinged the server.");
         res.sendStatus(200);
       })
       .catch((error) => {
-        console.error("Error fetching data:", error.message); // Log the error message
-        console.error(`Failed to ping server at ${serverUrl}`); // Log the URL that failed
+        console.error("Error fetching data:", error.message);
+        console.error(`Failed to ping server at ${serverUrl}`);
         res
           .status(500)
           .json({ message: "Error pinging server", error: error.message });
