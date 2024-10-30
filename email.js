@@ -12,32 +12,52 @@ const transporter = nodemailer.createTransport({
 });
 
 const sendEmailReceipt = async (to, name, phone) => {
+  const logoUrl =
+    "https://firebasestorage.googleapis.com/v0/b/supernova-dental.appspot.com/o/favicon.ico?alt=media&token=ec16f0f4-6447-4d51-8f75-884db512dd75";
+
+  const instagramLink = "https://www.instagram.com/supernova.dental"; 
+  const facebookLink = "https://www.facebook.com/profile.php?id=61567279201971"; 
+
   const htmlContent = `
-    <html>
-    <head>
-      <style>
-        body { font-family: Arial, sans-serif; margin: 20px; padding: 0; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px; background-color: #f9f9f9; }
-        h1 { color: #DAA520; }
-        .footer { margin-top: 20px; font-size: 0.9em; color: #777; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <h1>Thank You for Signing Up!</h1>
-        <p>Dear ${name},</p>
-        <p>Thank you for signing up for our promotion! We have received the following details:</p>
-        <p><strong>Full Name:</strong> ${name}</p>
-        <p><strong>Phone Number:</strong> ${phone}</p>
-        <p>We look forward to seeing you soon.</p>
-        <p>Best regards, <br> Your Team</p>
-        <div class="footer">
-          <p>If you have any questions, feel free to contact us at support@example.com.</p>
-        </div>
+  <html>
+  <head>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 20px; padding: 0; color: #333; }
+      .container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px; background-color: #f9f9f9; }
+      h1 { color: #DAA520; }
+      .footer { margin-top: 20px; font-size: 0.9em; color: #777; }
+      .logo { display: flex; justify-content: space-between; align-items: center; }
+      .social-links { margin-top: 20px; }
+      .social-links img { margin-right: 10px; max-width: 40px; } /* Adjust size of social icons */
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="logo">
+        <img src="${logoUrl}" alt="Supernova Dental Logo" style="max-width: 100px;"/> <!-- Supernova Dental Logo -->
       </div>
-    </body>
-    </html>
-  `;
+      <h1>Thank You for Signing Up!</h1>
+      <p>Dear ${name},</p>
+      <p>We cannot wait to help you get your Supernova smile! Thank you for signing up for our promotion! We have received the following details:</p>
+      <p><strong>Full Name:</strong> ${name}</p>
+      <p><strong>Phone Number:</strong> ${phone}</p>
+      <p>Best regards, <br> Your Team</p>
+      <p>Keep up to date with us on social media!</p>
+      <div class="social-links">
+        <a href="${instagramLink}" target="_blank">
+          <img src="https://firebasestorage.googleapis.com/v0/b/supernova-dental.appspot.com/o/insta_anim.gif?alt=media&token=fa004e80-29d5-4aa0-be0f-d70edeac9e9d" alt="Instagram" />
+        </a>
+        <a href="${facebookLink}" target="_blank">
+          <img src="https://firebasestorage.googleapis.com/v0/b/supernova-dental.appspot.com/o/facebook_anim.gif?alt=media&token=22df5d65-5ede-4659-8fa6-f2152a5e18a2" alt="Facebook" />
+        </a>
+      </div>
+      <div class="footer">
+        <p>If you have any questions, feel free to contact us at support@example.com.</p>
+      </div>
+    </div>
+  </body>
+  </html>
+`;
 
   const mailOptions = {
     from: process.env.EMAIL_USER,
