@@ -33,43 +33,75 @@ const defineRoutes = (appExpress) => {
         .notEmpty()
         .withMessage("Phone number is required")
         .escape(),
-      body("consent")
+      body("optOutEmails")
         .optional()
         .isBoolean()
         .withMessage("Consent must be a boolean value"),
     ],
     async (req, res) => {
-      const { fullname, email, phone, consent } = req.body;
+      const { fullname, email, phone, optOutEmails } = req.body;
+
+      console.log('optOutEmails', optOutEmails);
+      
 
       try {
-        const colRef = collection(db, "promotion");
+        const promoWithEmailsRef = collection(db, "promotion-with-emails");
+        const promoWithoutEmailsRef = collection(
+          db,
+          "promotion-without-emails"
+        );
 
         console.log("Checking if email and phone number are unique...");
 
-        // Use Promise.all to check for unique email and phone concurrently
-        const [emailSnapshot, phoneSnapshot] = await Promise.all([
-          getDocs(query(colRef, where("email", "==", email))),
-          getDocs(query(colRef, where("phone", "==", phone))),
+        // Use Promise.all to check both collections for duplicate email and phone
+        const [
+          emailSnapshotWithEmails,
+          emailSnapshotWithoutEmails,
+          phoneSnapshotWithEmails,
+          phoneSnapshotWithoutEmails,
+        ] = await Promise.all([
+          getDocs(query(promoWithEmailsRef, where("email", "==", email))),
+          getDocs(query(promoWithoutEmailsRef, where("email", "==", email))),
+          getDocs(query(promoWithEmailsRef, where("phone", "==", phone))),
+          getDocs(query(promoWithoutEmailsRef, where("phone", "==", phone))),
         ]);
 
-        if (!emailSnapshot.empty) {
+        // Check if either email or phone number already exists in either collection
+        if (
+          !emailSnapshotWithEmails.empty ||
+          !emailSnapshotWithoutEmails.empty
+        ) {
           console.log("Email is already in use.");
           return res.status(400).json({ message: "Email is already in use." });
         }
 
-        if (!phoneSnapshot.empty) {
+        if (
+          !phoneSnapshotWithEmails.empty ||
+          !phoneSnapshotWithoutEmails.empty
+        ) {
           return res
             .status(400)
             .json({ message: "Phone number is already in use." });
         }
 
-        // Proceed to save if both checks are successful
-        const docRef = doc(colRef);
-        await setDoc(docRef, { fullname, email, phone, createdAt: new Date() });
+        // Choose collection based on optOutEmails
+        const targetCollection = optOutEmails
+          ? promoWithoutEmailsRef
+          : promoWithEmailsRef;
 
-        if (consent) {
+        // Save data to the appropriate collection
+        const docRef = doc(targetCollection);
+        await setDoc(docRef, {
+          fullname,
+          email,
+          phone,
+          createdAt: new Date(),
+          optOutEmails,
+        });
+
+        
           await sendEmailReceipt(email, fullname, phone);
-        }
+        
 
         console.log("Promotion data saved successfully.");
         return res
