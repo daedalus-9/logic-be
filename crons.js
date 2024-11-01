@@ -2,7 +2,7 @@ const cronjob = require("node-cron");
 
 const keepAlive = () => {
   // Schedule the cron job to run every 10 minutes
-  cronjob.schedule("*/10 * * * *", () => {
+  cronjob.schedule("*/8 * * * *", () => {
     // Send a GET request to the cron job route to execute the logic
     const cronJobUrl = process.env.SERVER_URL + "/cron-job-route";
 
