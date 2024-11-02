@@ -41,9 +41,6 @@ const defineRoutes = (appExpress) => {
     async (req, res) => {
       const { fullname, email, phone, optOutEmails } = req.body;
 
-      console.log('optOutEmails', optOutEmails);
-      
-
       try {
         const promoWithEmailsRef = collection(db, "promotion-with-emails");
         const promoWithoutEmailsRef = collection(
@@ -99,14 +96,35 @@ const defineRoutes = (appExpress) => {
           optOutEmails,
         });
 
-        
-          await sendEmailReceipt(email, fullname, phone);
-        
+        // Respond to the user immediately
+        res.status(200).json({ message: "Promotion data saved successfully." });
 
-        console.log("Promotion data saved successfully.");
-        return res
-          .status(200)
-          .json({ message: "Promotion data saved successfully." });
+        // Send emails asynchronously and handle failures
+        try {
+          await sendEmailReceipt(email, fullname, phone);
+
+          const internalMailOptions = {
+            from: process.env.EMAIL_USER,
+            to: "enquiries@supernovadental.co.uk",
+            subject: "New Supernova Dental Promotion Signup",
+            text: `Full Name: ${fullname}\nEmail: ${email}\nPhone: ${phone}\nOpt-Out of Emails: ${optOutEmails}`,
+          };
+          await sendEmail(internalMailOptions, process.env.EMAIL_USER);
+        } catch (emailError) {
+          console.error("Error sending email:", emailError);
+
+          // Save failure details to Firestore
+          const failureCollection = collection(db, "failure-emails");
+          const failureDocRef = doc(failureCollection);
+          await setDoc(failureDocRef, {
+            fullname,
+            email,
+            phone,
+            optOutEmails,
+            error: emailError.message,
+            createdAt: new Date(),
+          });
+        }
       } catch (error) {
         console.error("Error saving promotion data:", error);
         return res
