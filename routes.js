@@ -185,7 +185,7 @@ const defineRoutes = (appExpress) => {
       // Compose the email message
       const mailOptions = {
         from: email,
-        to: process.env.EMAIL_RECIPIENT,
+        to: "enquiries@supernovadental.co.uk",
         subject: `${category.toUpperCase()} Enquiry Form Submission`,
         text: `Name: ${name}\nEmail: ${email}\nPhone: ${phone}\n\nMessage: ${message}`,
       };
