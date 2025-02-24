@@ -37,9 +37,13 @@ const defineRoutes = (appExpress) => {
         .optional()
         .isBoolean()
         .withMessage("Consent must be a boolean value"),
+      body("source")
+        .optional() // Make source optional
+        .trim()
+        .escape(),
     ],
     async (req, res) => {
-      const { fullname, email, phone, optOutEmails } = req.body;
+      const { fullname, email, phone, optOutEmails, source } = req.body;
 
       try {
         const promoWithEmailsRef = collection(db, "promotion-with-emails");
@@ -49,6 +53,11 @@ const defineRoutes = (appExpress) => {
         );
 
         console.log("Checking if email and phone number are unique...");
+
+        // Decode the source if provided
+        const decodedSource = source
+          ? decodeURIComponent(source).replace(/^\/+/, "")
+          : source;
 
         // Use Promise.all to check both collections for duplicate email and phone
         const [
@@ -94,6 +103,7 @@ const defineRoutes = (appExpress) => {
           phone,
           createdAt: new Date(),
           optOutEmails,
+          source: decodedSource, // Save the decoded source if provided
         });
 
         // Respond to the user immediately
@@ -106,8 +116,12 @@ const defineRoutes = (appExpress) => {
           const internalMailOptions = {
             from: process.env.EMAIL_USER,
             to: "enquiries@supernovadental.co.uk",
-            subject: "New Supernova Dental Promotion Signup",
-            text: `Full Name: ${fullname}\nEmail: ${email}\nPhone: ${phone}\nOpt-Out of Emails: ${optOutEmails}`,
+            subject: `New Website Signup ${
+              decodedSource ? `from ${decodedSource}` : ""
+            }`, // Include decoded source if available
+            text: `Full Name: ${fullname}\nEmail: ${email}\nPhone: ${phone}\nOpt-Out of Emails: ${optOutEmails}\nSource: ${
+              decodedSource || "N/A"
+            }`, // Include decoded source if available, or 'N/A' if not
           };
           await sendEmail(internalMailOptions, process.env.EMAIL_USER);
         } catch (emailError) {
