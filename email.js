@@ -1,4 +1,3 @@
-// email.js
 const nodemailer = require("nodemailer");
 const { getRandomInt, wait } = require("./utils");
 require("dotenv").config();
@@ -18,7 +17,6 @@ const sendEmailReceipt = async (to, name, phone) => {
   const instagramLink = "https://www.instagram.com/supernova.dental";
   const facebookLink = "https://www.facebook.com/profile.php?id=61567279201971";
 
-  // Update logo URLs for Instagram and Facebook
   const instagramLogoUrl =
     "https://firebasestorage.googleapis.com/v0/b/supernova-dental.appspot.com/o/instaLogo.png?alt=media&token=6de73b4a-5305-4607-be13-24f5195387e6";
   const facebookLogoUrl =
@@ -28,16 +26,73 @@ const sendEmailReceipt = async (to, name, phone) => {
     <html>
     <head>
       <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 0; color: #333; }
-        .container { width: 100%; max-width: 600px; margin: 20px auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px; background-color: #f9f9f9; text-align: center; }
-        h1 { color: #c29470; font-size: 24px; margin-top: 0; text-align: center; }
-        .footer { margin-vertical: 20px; font-size: 0.9em; color: #777; text-align: center; }
-        .logo { text-align: center; margin-bottom: 20px; }
-        .logo img { max-width: 120px; height: auto; }
-        .social-links { text-align: center; margin-top: 40px; margin-bottom: 40px; }
-        .social-links a { display: inline-block; margin-right: 20px; }
-        .social-links img { width: 40px; height: 40px; transition: transform 0.3s; }
-        .text-content { text-align: left; padding: 10px 20px; }
+        * {
+          box-sizing: border-box;
+        }
+        body {
+          font-family: Arial, sans-serif;
+          margin: 0;
+          padding: 0;
+          color: #333;
+          overflow-x: hidden;
+        }
+        .container {
+          width: 100%;
+          max-width: 600px;
+          margin: 20px auto;
+          padding: 20px;
+          border: 1px solid #ddd;
+          border-radius: 8px;
+          background-color: #f9f9f9;
+          text-align: center;
+          box-sizing: border-box;
+        }
+        h1 {
+          color: #a4693d;
+          font-size: 24px;
+          margin-top: 0;
+          text-align: center;
+        }
+        .footer {
+          margin-top: 20px;
+          margin-bottom: 20px;
+          font-size: 0.9em;
+          color: #777;
+          text-align: center;
+        }
+        .logo {
+          text-align: center;
+          margin-bottom: 20px;
+        }
+        .logo img {
+          max-width: 120px;
+          height: auto;
+          display: block;
+          margin: 0 auto;
+        }
+        img {
+          max-width: 100%;
+          height: auto;
+          display: block;
+        }
+        .social-links {
+          text-align: center;
+          margin-top: 40px;
+          margin-bottom: 40px;
+        }
+        .social-links a {
+          display: inline-block;
+          margin-right: 20px;
+        }
+        .social-links img {
+          width: 40px;
+          height: 40px;
+          transition: transform 0.3s;
+        }
+        .text-content {
+          text-align: left;
+          padding: 10px 20px;
+        }
       </style>
     </head>
     <body>
@@ -55,6 +110,17 @@ const sendEmailReceipt = async (to, name, phone) => {
           <br/>
           <p>Best regards, <br> Supernova Dental Team</p>
           </div>
+        <br/>
+        <p style="margin-bottom: 10px; font-size: 16px;">Prefer to book yourself in? Use our patient portal by pressing the button below:</p>
+        <div style="text-align: center; margin-bottom: 30px; max-width: 100%; overflow-x: hidden;">
+          <a 
+            href="https://supernova.portal.dental" 
+            target="_blank" 
+            style="display: inline-block; background-color: #a4693d; color: #fff; text-decoration: none; padding: 14px 28px; font-size: 16px; border-radius: 6px; font-weight: 500;"
+          >
+            Book Now!
+          </a>
+        </div>
           <div class="social-links">
           <p>Stay connected with us on social media!</p>
           <a href="${instagramLink}" target="_blank">
