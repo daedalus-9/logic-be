@@ -8,12 +8,55 @@ const {
   where,
   collection,
   query,
+  Timestamp,
 } = require("firebase/firestore");
 const { db } = require("./firebaseConfig");
 const { retryFetch } = require("./utils");
 require("dotenv").config();
 
 const defineRoutes = (appExpress) => {
+  appExpress.post("/submit-referral", async (req, res) => {
+    console.log("Received referral form submission:", req.body); // Log the request body for debugging
+    
+    const formData = req.body; // Capture all form data
+
+    // Construct the email subject and body
+    const emailSubject = `Referral Form Submission from ${
+      formData.name || "No name provided"
+    }`;
+
+    // Dynamically construct the email body, iterating over all form fields
+    let emailText = `Form submission details:\n\n`;
+
+    // Loop over the keys of the form data to add them to the email text
+    for (const [key, value] of Object.entries(formData)) {
+      if (value) {
+        emailText += `${
+          key.charAt(0).toUpperCase() + key.slice(1)
+        }: ${value}\n`; // Capitalize the first letter of the key
+      }
+    }
+
+    console.log("Email text:", emailText); // Log the email text for debugging
+
+    // Prepare the mail options
+    const mailOptions = {
+      from: formData.practiceEmail,
+      to: "enquiries@supernovadental.co.uk",
+      subject: emailSubject,
+      text: emailText,
+    };
+
+    try {
+      // Send the email
+      await sendEmail(mailOptions, "enquiries@supernovadental.co.uk");
+      res.status(200).json({ message: "Form submitted successfully" });
+    } catch (emailError) {
+      console.error("Error sending email:", emailError);
+      res.status(500).json({ message: "Failed to send email" });
+    }
+  });
+
   // Promotion route
   appExpress.post(
     "/promotion",
@@ -241,4 +284,4 @@ const defineRoutes = (appExpress) => {
   );
 };
 
-module.exports = defineRoutes;
+module.exports = { defineRoutes, getAllPromotionData };
