@@ -148,6 +148,140 @@ const defineRoutes = (appExpress) => {
     }
   );
 
+  // Refer A Friend route
+  appExpress.post(
+    "/refer-a-friend",
+    [
+      body("referrerName")
+        .trim()
+        .notEmpty()
+        .withMessage("Full name is required")
+        .escape(),
+      body("fullname")
+        .trim()
+        .notEmpty()
+        .withMessage("Full name is required")
+        .escape(),
+      body("email")
+        .trim()
+        .isEmail()
+        .withMessage("Invalid email address")
+        .escape(),
+      body("phone")
+        .trim()
+        .notEmpty()
+        .withMessage("Phone number is required")
+        .escape(),
+    ],
+    async (req, res) => {
+      const { referrerName, fullname, email, phone, optOutEmails, source } =
+        req.body;
+
+      try {
+        const promoWithEmailsRef = collection(db, "refer-a-friend-with-emails");
+        const promoWithoutEmailsRef = collection(
+          db,
+          "refer-a-friend-without-emails"
+        );
+
+        console.log("Checking if email and phone number are unique...");
+
+        // Decode the source if provided
+        const decodedSource = source
+          ? decodeURIComponent(source).replace(/^\/+/, "")
+          : source;
+
+        // Use Promise.all to check both collections for duplicate email and phone
+        const [
+          emailSnapshotWithEmails,
+          emailSnapshotWithoutEmails,
+          phoneSnapshotWithEmails,
+          phoneSnapshotWithoutEmails,
+        ] = await Promise.all([
+          getDocs(query(promoWithEmailsRef, where("email", "==", email))),
+          getDocs(query(promoWithoutEmailsRef, where("email", "==", email))),
+          getDocs(query(promoWithEmailsRef, where("phone", "==", phone))),
+          getDocs(query(promoWithoutEmailsRef, where("phone", "==", phone))),
+        ]);
+
+        // Check if either email or phone number already exists in either collection
+        if (
+          !emailSnapshotWithEmails.empty ||
+          !emailSnapshotWithoutEmails.empty
+        ) {
+          console.log("Email is already in use.");
+          return res.status(400).json({ message: "Email is already in use." });
+        }
+
+        if (
+          !phoneSnapshotWithEmails.empty ||
+          !phoneSnapshotWithoutEmails.empty
+        ) {
+          return res
+            .status(400)
+            .json({ message: "Phone number is already in use." });
+        }
+
+        // Choose collection based on optOutEmails
+        const targetCollection = optOutEmails
+          ? promoWithoutEmailsRef
+          : promoWithEmailsRef;
+
+        // Save data to the appropriate collection
+        const docRef = doc(targetCollection);
+        await setDoc(docRef, {
+          referrerName,
+          fullname,
+          email,
+          phone,
+          createdAt: new Date(),
+          optOutEmails,
+          source: decodedSource, // Save the decoded source if provided
+        });
+
+        // Respond to the user immediately
+        res.status(200).json({ message: "Promotion data saved successfully." });
+
+        // Send emails asynchronously and handle failures
+        try {
+          await sendEmailReceipt(email, fullname, phone);
+
+          const internalMailOptions = {
+            from: process.env.EMAIL_USER,
+            to: "enquiries@supernovadental.co.uk",
+            subject: `New Website Signup ${
+              decodedSource ? `from ${decodedSource}` : ""
+            }`, // Include decoded source if available
+            text: `Full Name: ${fullname}\nEmail: ${email}\nPhone: ${phone}\nOpt-Out of Emails: ${optOutEmails}\nSource: ${
+              decodedSource || "N/A"
+            }`, // Include decoded source if available, or 'N/A' if not
+          };
+          await sendEmail(internalMailOptions, process.env.EMAIL_USER);
+        } catch (emailError) {
+          console.error("Error sending email:", emailError);
+
+          // Save failure details to Firestore
+          const failureCollection = collection(db, "failure-emails");
+          const failureDocRef = doc(failureCollection);
+          await setDoc(failureDocRef, {
+            referrerName,
+            fullname,
+            email,
+            phone,
+            optOutEmails,
+            error: emailError.message,
+            createdAt: new Date(),
+          });
+        }
+      } catch (error) {
+        console.error("Error saving promotion data:", error);
+        return res
+          .status(500)
+          .json({ message: "Error saving data to Firestore." });
+      }
+    }
+  );
+
   // Promotion route
   appExpress.post(
     "/referral",
