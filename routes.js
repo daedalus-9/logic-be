@@ -503,4 +503,4 @@ const defineRoutes = (appExpress) => {
   );
 };
 
-module.exports = { defineRoutes, getAllPromotionData };
+module.exports = { defineRoutes };
