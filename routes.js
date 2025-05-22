@@ -287,7 +287,7 @@ const defineRoutes = (appExpress) => {
 
         // Send emails asynchronously and handle failures
         try {
-          await sendEmailReceipt(email, fullname, phone);
+          await sendEmailReceipt(referrerName, email, fullname, phone);
 
           const internalMailOptions = {
             from: process.env.EMAIL_USER,
@@ -295,7 +295,7 @@ const defineRoutes = (appExpress) => {
             subject: `New Website Signup ${
               decodedSource ? `from ${decodedSource}` : ""
             }`, // Include decoded source if available
-            text: `Full Name: ${fullname}\nEmail: ${email}\nPhone: ${phone}\nOpt-Out of Emails: ${optOutEmails}\nSource: ${
+            text: `Referrer Name: ${referrerName}\n Full Name: ${fullname}\nEmail: ${email}\nPhone: ${phone}\nOpt-Out of Emails: ${optOutEmails}\nSource: ${
               decodedSource || "N/A"
             }`, // Include decoded source if available, or 'N/A' if not
           };

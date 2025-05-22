@@ -10,7 +10,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-const sendEmailReceipt = async (to, name, phone) => {
+const sendEmailReceipt = async (referrerName, to, name, phone) => {
   const logoUrl =
     "https://firebasestorage.googleapis.com/v0/b/supernova-dental.appspot.com/o/favicon.ico?alt=media&token=ec16f0f4-6447-4d51-8f75-884db512dd75";
 
@@ -103,8 +103,9 @@ const sendEmailReceipt = async (to, name, phone) => {
         <h1>Thank You for Signing Up!</h1>
         <div class="text-content">
           <p>Dear ${name},</p>
-          <p>Thank you for signing up for our promotion; we’re excited to help you achieve your Supernova smile!</p>
+          <p>Thank you for your enquiry; we’re excited to help you achieve your Supernova smile!</p>
           <p>We have received the following details and will reach out to you soon to get you booked in:</p>
+          ${referrerName !== 'NoFriendReferral' ? `<p><strong>Referrer Name:</strong> ${referrerName}</p>` : ''}
           <p><strong>Full Name:</strong> ${name}</p>
           <p><strong>Phone Number:</strong> ${phone}</p>
           <br/>
@@ -141,7 +142,7 @@ const sendEmailReceipt = async (to, name, phone) => {
   const mailOptions = {
     from: process.env.EMAIL_USER,
     to,
-    subject: "Promotion Signup Confirmation",
+    subject: "Supernova Dental Signup Confirmation",
     html: htmlContent,
   };
 
