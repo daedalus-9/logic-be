@@ -105,7 +105,11 @@ const sendEmailReceipt = async (referrerName, to, name, phone) => {
           <p>Dear ${name},</p>
           <p>Thank you for your enquiry; we’re excited to help you achieve your Supernova smile!</p>
           <p>We have received the following details and will reach out to you soon to get you booked in:</p>
-          ${referrerName !== 'NoFriendReferral' ? `<p><strong>Referrer Name:</strong> ${referrerName}</p>` : ''}
+          ${
+            referrerName !== "NoFriendReferral"
+              ? `<p><strong>Referrer Name:</strong> ${referrerName}</p>`
+              : ""
+          }
           <p><strong>Full Name:</strong> ${name}</p>
           <p><strong>Phone Number:</strong> ${phone}</p>
           <br/>
@@ -185,4 +189,30 @@ const sendEmail = async (mailOptions, email, retries = 0) => {
   }
 };
 
-module.exports = { sendEmailReceipt, sendEmail };
+/**
+ * Sends an email with optional attachments.
+ * @param {Object} mailOptions - Nodemailer mail options including attachments array.
+ * @param {string} email - Recipient email for logging/retry purposes.
+ * @param {number} retries - Internal retry counter.
+ */
+const sendEmailWithAttachments = async (mailOptions, email, retries = 0) => {
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log("Email with attachments sent");
+  } catch (error) {
+    console.error(
+      "*** ERROR sending email with attachments ***",
+      error?.message
+    );
+    if (retries < 5) {
+      const delayMs = getRandomInt(5000, 20000);
+      await wait(delayMs);
+      return sendEmailWithAttachments(mailOptions, email, retries + 1);
+    } else {
+      console.error("Failed to send email after 5 attempts");
+      throw error;
+    }
+  }
+};
+
+module.exports = { sendEmailReceipt, sendEmail, sendEmailWithAttachments };

@@ -20,10 +20,13 @@
     "express-validator": "^7.0.1",
     "firebase": "^10.13.0",
     "firebase-admin": "^11.10.1",
+    "fs": "^0.0.1-security",
+    "multer": "^2.0.1",
     "mysql": "^2.18.1",
     "node-cron": "^3.0.2",
     "node-fetch": "^2.6.11",
     "nodemailer": "^6.9.3",
+    "path": "^0.12.7",
     "twilio": "^4.12.0"
   },
   "devDependencies": {
