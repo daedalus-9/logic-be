@@ -1,6 +1,15 @@
 // routes.js
 const { body, validationResult } = require("express-validator");
-const { sendEmailReceipt, sendEmail } = require("./email");
+const {
+  sendEmailReceipt,
+  sendEmail,
+  sendEmailWithAttachments,
+} = require("./email");
+const multer = require("multer");
+const upload = multer({ dest: "uploads/" });
+const fs = require("fs");
+const path = require("path");
+
 const {
   doc,
   setDoc,
@@ -325,87 +334,63 @@ const defineRoutes = (appExpress) => {
     }
   );
 
-  // Promotion route
   appExpress.post(
     "/referral",
-    [
-      body("fullname")
-        .trim()
-        .notEmpty()
-        .withMessage("Full name is required")
-        .escape(),
-      body("email")
-        .trim()
-        .isEmail()
-        .withMessage("Invalid email address")
-        .escape(),
-      body("dateOfBirth")
-        .trim()
-        .isDate()
-        .withMessage("Invalid date of birth")
-        .escape(),
-      body("phone")
-        .trim()
-        .notEmpty()
-        .withMessage("Phone number is required")
-        .escape(),
-      body("referralType")
-        .trim()
-        .notEmpty()
-        .withMessage("Referral type is required")
-        .escape(),
-    ],
+    upload.array("attachments"),
     async (req, res) => {
-      const { fullname, email, dateOfBirth, phone, referralType } = req.body;
+      const { body, files } = req;
+      console.log("Received referral form submission:", body); // Log the request body for debugging
+      // Format dateOfBirth to dd/mm/yyyy if present
+      if (body.dateOfBirth) {
+        const dob = new Date(body.dateOfBirth);
+        if (!isNaN(dob)) {
+          const day = String(dob.getDate()).padStart(2, "0");
+          const month = String(dob.getMonth() + 1).padStart(2, "0");
+          const year = dob.getFullYear();
+          body.dateOfBirth = `${day}/${month}/${year}`;
+        }
+      }
+
+      // Filter files to accept only .jpg and .pdf
+      const allowedExtensions = [".jpg", ".jpeg", ".pdf"];
+      const filteredFiles = (files || []).filter((file) => {
+        const ext = path.extname(file.originalname).toLowerCase();
+        return allowedExtensions.includes(ext);
+      });
+
+      // Build attachments array for nodemailer
+      const attachments = filteredFiles.map((file) => ({
+        filename: file.originalname,
+        path: file.path,
+      }));
+
+      // Build email body text from form fields
+      const emailText = Object.entries(body)
+        .map(([key, val]) => `${key}: ${val}`)
+        .join("\n");
+
+      const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: "enquiries@supernovadental.co.uk",
+        subject: `New ${body.referralType || "General"} Referral`,
+        text: emailText,
+        attachments,
+      };
 
       try {
-        const formattedDateOfBirth = new Date(dateOfBirth).toLocaleDateString(
-          "en-GB",
-          {
-            day: "2-digit",
-            month: "2-digit",
-            year: "2-digit",
-          }
-        );
+        await sendEmailWithAttachments(mailOptions, mailOptions.to);
 
-        console.log("formattedDateOfBirth", req.body);
-
-        // Respond to the user immediately
-        res.status(200).json({ message: "Referral data saved successfully." });
-
-        // Send emails asynchronously and handle failures
-        try {
-          await sendEmailReceipt(email, fullname, phone);
-
-          const internalMailOptions = {
-            from: process.env.EMAIL_USER,
-            to: "enquiries@supernovadental.co.uk",
-            //TODO: PASS TYPE OF Referral
-            subject: `New ${referralType} Referral `,
-            text: `Full Name: ${fullname}\nEmail: ${email}\n Date of Birth ${formattedDateOfBirth} \nPhone: ${phone}\n
-            `,
-          };
-          await sendEmail(internalMailOptions, process.env.EMAIL_USER);
-        } catch (emailError) {
-          console.error("Error sending email:", emailError);
-
-          // Save failure details to Firestore
-          const failureCollection = collection(db, "failure-referral-emails");
-          const failureDocRef = doc(failureCollection);
-          await setDoc(failureDocRef, {
-            fullname,
-            email,
-            dateOfBirth,
-            phone,
-            error: emailError.message,
-            createdAt: new Date(),
+        // Clean up uploaded files after sending email
+        attachments.forEach((att) => {
+          fs.unlink(att.path, (err) => {
+            if (err) console.error("Error deleting file:", att.path, err);
           });
-        }
+        });
+
+        res.status(200).json({ message: "Referral received and email sent." });
       } catch (error) {
-        console.error("Error saving promotion data:", error);
-        return res
-          .status(500)
-          .json({ message: "Error saving data to Firestore." });
+        console.error("Error sending referral email:", error);
+        res.status(500).json({ error: "Failed to process referral." });
       }
     }
   );
