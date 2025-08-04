@@ -395,76 +395,54 @@ const defineRoutes = (appExpress) => {
     }
   );
 
-  // Promotion route
   appExpress.post(
     "/careers",
-    [
-      body("fullname")
-        .trim()
-        .notEmpty()
-        .withMessage("Full name is required")
-        .escape(),
-      body("email")
-        .trim()
-        .isEmail()
-        .withMessage("Invalid email address")
-        .escape(),
-      body("dateOfBirth")
-        .trim()
-        .isDate()
-        .withMessage("Invalid date of birth")
-        .escape(),
-      body("phone")
-        .trim()
-        .notEmpty()
-        .withMessage("Phone number is required")
-        .escape(),
-      body("enquiryType")
-        .trim()
-        .notEmpty()
-        .withMessage("Referral type is required")
-        .escape(),
-    ],
+    upload.array("attachments"),
     async (req, res) => {
-      const { fullname, email, phone, enquiryType } = req.body;
+      const { body, files } = req;
+      console.log("Received referral form submission:", body); // Log the request body for debugging
+      
+
+      // Filter files to accept only .jpg and .pdf
+      const allowedExtensions = [".jpg", ".jpeg", ".pdf"];
+      const filteredFiles = (files || []).filter((file) => {
+        const ext = path.extname(file.originalname).toLowerCase();
+        return allowedExtensions.includes(ext);
+      });
+
+      // Build attachments array for nodemailer
+      const attachments = filteredFiles.map((file) => ({
+        filename: file.originalname,
+        path: file.path,
+      }));
+
+      // Build email body text from form fields
+      const emailText = Object.entries(body)
+        .map(([key, val]) => `${key}: ${val}`)
+        .join("\n");
+
+      const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: "enquiries@supernovadental.co.uk",
+        subject: `New ${body.referralType || "General"} Referral`,
+        text: emailText,
+        attachments,
+      };
 
       try {
-        // Respond to the user immediately
-        res.status(200).json({ message: "Referral data saved successfully." });
+        await sendEmailWithAttachments(mailOptions, mailOptions.to);
 
-        // Send emails asynchronously and handle failures
-        try {
-          await sendEmailReceipt(email, fullname, phone);
-
-          const internalMailOptions = {
-            from: process.env.EMAIL_USER,
-            to: "enquiries@supernovadental.co.uk",
-            //TODO: PASS TYPE OF Referral
-            subject: `New ${enquiryType} `,
-            text: `Full Name: ${fullname}\nEmail: ${email} \nPhone: ${phone}\n
-            `,
-          };
-          await sendEmail(internalMailOptions, process.env.EMAIL_USER);
-        } catch (emailError) {
-          console.error("Error sending email:", emailError);
-
-          // Save failure details to Firestore
-          const failureCollection = collection(db, "failure-referral-emails");
-          const failureDocRef = doc(failureCollection);
-          await setDoc(failureDocRef, {
-            fullname,
-            email,
-
-            phone,
-            error: emailError.message,
-            createdAt: new Date(),
+        // Clean up uploaded files after sending email
+        attachments.forEach((att) => {
+          fs.unlink(att.path, (err) => {
+            if (err) console.error("Error deleting file:", att.path, err);
           });
-        }
+        });
+
+        res.status(200).json({ message: "Referral received and email sent." });
       } catch (error) {
-        console.error("Error saving promotion data:", error);
-        return res
-          .status(500)
-          .json({ message: "Error saving data to Firestore." });
+        console.error("Error sending referral email:", error);
+        res.status(500).json({ error: "Failed to process referral." });
       }
     }
   );
