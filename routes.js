@@ -17,7 +17,7 @@ require("dotenv").config();
 const defineRoutes = (appExpress) => {
   appExpress.post("/submit-referral", async (req, res) => {
     console.log("Received referral form submission:", req.body); // Log the request body for debugging
-    
+
     const formData = req.body; // Capture all form data
 
     // Construct the email subject and body
@@ -410,6 +410,80 @@ const defineRoutes = (appExpress) => {
     }
   );
 
+  // Promotion route
+  appExpress.post(
+    "/careers",
+    [
+      body("fullname")
+        .trim()
+        .notEmpty()
+        .withMessage("Full name is required")
+        .escape(),
+      body("email")
+        .trim()
+        .isEmail()
+        .withMessage("Invalid email address")
+        .escape(),
+      body("dateOfBirth")
+        .trim()
+        .isDate()
+        .withMessage("Invalid date of birth")
+        .escape(),
+      body("phone")
+        .trim()
+        .notEmpty()
+        .withMessage("Phone number is required")
+        .escape(),
+      body("enquiryType")
+        .trim()
+        .notEmpty()
+        .withMessage("Referral type is required")
+        .escape(),
+    ],
+    async (req, res) => {
+      const { fullname, email, phone, enquiryType } = req.body;
+
+      try {
+        // Respond to the user immediately
+        res.status(200).json({ message: "Referral data saved successfully." });
+
+        // Send emails asynchronously and handle failures
+        try {
+          await sendEmailReceipt(email, fullname, phone);
+
+          const internalMailOptions = {
+            from: process.env.EMAIL_USER,
+            to: "enquiries@supernovadental.co.uk",
+            //TODO: PASS TYPE OF Referral
+            subject: `New ${enquiryType} `,
+            text: `Full Name: ${fullname}\nEmail: ${email} \nPhone: ${phone}\n
+            `,
+          };
+          await sendEmail(internalMailOptions, process.env.EMAIL_USER);
+        } catch (emailError) {
+          console.error("Error sending email:", emailError);
+
+          // Save failure details to Firestore
+          const failureCollection = collection(db, "failure-referral-emails");
+          const failureDocRef = doc(failureCollection);
+          await setDoc(failureDocRef, {
+            fullname,
+            email,
+
+            phone,
+            error: emailError.message,
+            createdAt: new Date(),
+          });
+        }
+      } catch (error) {
+        console.error("Error saving promotion data:", error);
+        return res
+          .status(500)
+          .json({ message: "Error saving data to Firestore." });
+      }
+    }
+  );
+
   // Health check route (simple response, no retryFetch)
   appExpress.get("/health", (req, res) => {
     res.sendStatus(200);
@@ -503,4 +577,20 @@ const defineRoutes = (appExpress) => {
   );
 };
 
-module.exports = { defineRoutes };
+const getAllPromotionData = async () => {
+  const promoWithEmailsRef = collection(db, "promotion-with-emails");
+
+  // Convert "Mon, May 5, 4:33 PM" to a Firestore Timestamp
+  const startDate = Timestamp.fromDate(new Date("2025-06-26T14:13:00Z")); // UTC time
+
+  // Create query with date filter
+  const q = query(promoWithEmailsRef, where("createdAt", ">=", startDate));
+  const snapshot = await getDocs(q);
+
+  return snapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  }));
+};
+
+module.exports = { defineRoutes, getAllPromotionData };
