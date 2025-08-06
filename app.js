@@ -38,7 +38,7 @@ const limiter = rateLimit({
 defineRoutes(appExpress);
 
 // Cronjob to keep the server alive
-keepAlive();
+// keepAlive();
 
 // getAllPromotionData()
 //   .then((data) => {

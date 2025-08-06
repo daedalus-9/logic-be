@@ -447,30 +447,30 @@ const defineRoutes = (appExpress) => {
     }
   );
 
-  // Health check route (simple response, no retryFetch)
-  appExpress.get("/health", (req, res) => {
-    res.sendStatus(200);
-  });
+  // // Health check route (simple response, no retryFetch)
+  // appExpress.get("/health", (req, res) => {
+  //   res.sendStatus(200);
+  // });
 
-  // Cron job route
-  appExpress.get("/cron-job-route", (req, res) => {
-    const serverUrl = process.env.SERVER_URL + "/health"; // Ping /health
+  // // Cron job route
+  // appExpress.get("/cron-job-route", (req, res) => {
+  //   const serverUrl = process.env.SERVER_URL + "/health"; // Ping /health
 
-    console.log(`Pinging server at: ${serverUrl}`);
+  //   console.log(`Pinging server at: ${serverUrl}`);
 
-    retryFetch(serverUrl)
-      .then(() => {
-        console.log("Successfully pinged the server.");
-        res.sendStatus(200);
-      })
-      .catch((error) => {
-        console.error("Error fetching data:", error.message);
-        console.error(`Failed to ping server at ${serverUrl}`);
-        res
-          .status(500)
-          .json({ message: "Error pinging server", error: error.message });
-      });
-  });
+  //   retryFetch(serverUrl)
+  //     .then(() => {
+  //       console.log("Successfully pinged the server.");
+  //       res.sendStatus(200);
+  //     })
+  //     .catch((error) => {
+  //       console.error("Error fetching data:", error.message);
+  //       console.error(`Failed to ping server at ${serverUrl}`);
+  //       res
+  //         .status(500)
+  //         .json({ message: "Error pinging server", error: error.message });
+  //     });
+  // });
 
   appExpress.post(
     "/",
