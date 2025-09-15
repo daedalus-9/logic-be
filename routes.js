@@ -221,6 +221,7 @@ const defineRoutes = (appExpress) => {
       "cosmetic-dentistry/dental-implants": "implants",
       "cosmetic-dentistry/invisalign": "invisalign",
       "": "general-dentistry",
+      "practice": "patient-plan-assessment",
       "general-dentistry/emergency-dentistry": "emergency-appointments",
       "general-dentistry/dental-therapist": "preventative-dentistry",
       "general-dentistry/dental-hygiene": "hygienist-services",
