@@ -89,10 +89,7 @@ const defineRoutes = (appExpress) => {
         .optional()
         .isBoolean()
         .withMessage("Consent must be a boolean value"),
-      body("source")
-        .optional() // Make source optional
-        .trim()
-        .escape(),
+      body("source").optional().trim().escape(),
     ],
     async (req, res) => {
       const { fullname, email, phone, optOutEmails, source } = req.body;
@@ -104,14 +101,11 @@ const defineRoutes = (appExpress) => {
           "promotion-without-emails"
         );
 
-        console.log("Checking if email and phone number are unique...");
-
-        // Decode the source if provided
         const decodedSource = source
           ? decodeURIComponent(source).replace(/^\/+/, "")
           : source;
 
-        // Use Promise.all to check both collections for duplicate email and phone
+        // Check for duplicates
         const [
           emailSnapshotWithEmails,
           emailSnapshotWithoutEmails,
@@ -124,62 +118,47 @@ const defineRoutes = (appExpress) => {
           getDocs(query(promoWithoutEmailsRef, where("phone", "==", phone))),
         ]);
 
-        // Check if either email or phone number already exists in either collection
-        if (
+        const alreadyExists =
           !emailSnapshotWithEmails.empty ||
-          !emailSnapshotWithoutEmails.empty
-        ) {
-          console.log("Email is already in use.");
-          return res.status(400).json({ message: "Email is already in use." });
-        }
-
-        if (
+          !emailSnapshotWithoutEmails.empty ||
           !phoneSnapshotWithEmails.empty ||
-          !phoneSnapshotWithoutEmails.empty
-        ) {
-          return res
-            .status(400)
-            .json({ message: "Phone number is already in use." });
+          !phoneSnapshotWithoutEmails.empty;
+
+        // Save data only if new user
+        if (!alreadyExists) {
+          const targetCollection = optOutEmails
+            ? promoWithoutEmailsRef
+            : promoWithEmailsRef;
+
+          const docRef = doc(targetCollection);
+          await setDoc(docRef, {
+            fullname,
+            email,
+            phone,
+            createdAt: new Date(),
+            optOutEmails,
+            source: decodedSource,
+          });
         }
 
-        // Choose collection based on optOutEmails
-        const targetCollection = optOutEmails
-          ? promoWithoutEmailsRef
-          : promoWithEmailsRef;
-
-        // Save data to the appropriate collection
-        const docRef = doc(targetCollection);
-        await setDoc(docRef, {
-          fullname,
-          email,
-          phone,
-          createdAt: new Date(),
-          optOutEmails,
-          source: decodedSource, // Save the decoded source if provided
-        });
-
-        // Respond to the user immediately
-        res.status(200).json({ message: "Promotion data saved successfully." });
-
-        // Send emails asynchronously and handle failures
+        // Send email regardless of duplicate status
         try {
           await sendEmailReceipt(email, fullname, phone);
 
           const internalMailOptions = {
             from: process.env.EMAIL_USER,
             to: "enquiries@supernovadental.co.uk",
-            subject: `New Website Signup ${
+            subject: `Website Signup ${
               decodedSource ? `from ${decodedSource}` : ""
-            }`, // Include decoded source if available
+            }`,
             text: `Full Name: ${fullname}\nEmail: ${email}\nPhone: ${phone}\nOpt-Out of Emails: ${optOutEmails}\nSource: ${
               decodedSource || "N/A"
-            }`, // Include decoded source if available, or 'N/A' if not
+            }`,
           };
           await sendEmail(internalMailOptions, process.env.EMAIL_USER);
         } catch (emailError) {
           console.error("Error sending email:", emailError);
 
-          // Save failure details to Firestore
           const failureCollection = collection(db, "failure-emails");
           const failureDocRef = doc(failureCollection);
           await setDoc(failureDocRef, {
@@ -191,11 +170,17 @@ const defineRoutes = (appExpress) => {
             createdAt: new Date(),
           });
         }
+
+        // Respond to frontend with alreadyExists flag
+        res.status(200).json({
+          message: "Promotion processed successfully.",
+          alreadyExists,
+        });
       } catch (error) {
-        console.error("Error saving promotion data:", error);
+        console.error("Error processing promotion data:", error);
         return res
           .status(500)
-          .json({ message: "Error saving data to Firestore." });
+          .json({ message: "Error processing promotion data." });
       }
     }
   );
@@ -220,8 +205,8 @@ const defineRoutes = (appExpress) => {
     const treatmentSlugMap = {
       "cosmetic-dentistry/dental-implants": "implants",
       "cosmetic-dentistry/invisalign": "invisalign",
-      "Homepage": "general-dentistry",
-      "practice": "patient-plan-assessment",
+      Homepage: "general-dentistry",
+      practice: "patient-plan-assessment",
       "general-dentistry/emergency-dentistry": "emergency-appointments",
       "general-dentistry/dental-therapist": "preventative-dentistry",
       "general-dentistry/dental-hygiene": "hygienist-services",
