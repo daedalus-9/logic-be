@@ -218,7 +218,7 @@ const defineRoutes = (appExpress) => {
     }
 
     const treatmentSlugMap = {
-      "cosmetic-dentistry/implants": "implants",
+      "cosmetic-dentistry/dental-implants": "implants",
       "cosmetic-dentistry/invisalign": "invisalign",
       "": "general-dentistry",
       "general-dentistry/emergency-dentistry": "emergency-appointments",
