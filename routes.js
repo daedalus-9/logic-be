@@ -206,18 +206,22 @@ const defineRoutes = (appExpress) => {
     // Split fullname into firstName and lastName
     let firstName = "";
     let lastName = "";
+    let consentGiven = false;
 
     if (fullname) {
       const nameParts = fullname.trim().split(/\s+/);
       firstName = nameParts.shift() || ""; // First word
       lastName = nameParts.join(" "); // Rest of the name
     }
+    if (optOutEmails === false) {
+      consentGiven = true;
+    }
     const dengroBody = {
       firstName,
       lastName,
       email,
       phone,
-      optOutEmails,
+      consentGiven,
       source,
     };
 
