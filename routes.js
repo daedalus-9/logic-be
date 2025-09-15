@@ -216,13 +216,34 @@ const defineRoutes = (appExpress) => {
     if (optOutEmails === false) {
       consentGiven = true;
     }
+
+    const treatmentSlugMap = {
+      "cosmetic-dentistry/implants": "implants",
+      "cosmetic-dentistry/invisalign": "invisalign",
+      "": "general-dentistry",
+      "general-dentistry/emergency-dentistry": "emergency-appointments",
+      "general-dentistry/dental-therapist": "preventative-dentistry",
+      "general-dentistry/dental-hygiene": "hygienist-services",
+      "general-dentistry/sports-mouthguards": "sports-mouthguards",
+    };
+
+    const selectedTreatmentFromForm = source; // e.g., "cosmetic-dentistry/invisalign"
+    const treatmentSlug = treatmentSlugMap[selectedTreatmentFromForm];
+
+    if (!treatmentSlug) {
+      console.warn(
+        "Treatment not mapped for DenGro:",
+        selectedTreatmentFromForm
+      );
+    }
+
     const dengroBody = {
       firstName,
       lastName,
       email,
       phone,
       consentGiven,
-      source,
+      treatment: treatmentSlug,
     };
 
     try {
