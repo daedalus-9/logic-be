@@ -201,6 +201,26 @@ const defineRoutes = (appExpress) => {
   );
 
   appExpress.post("/dengro", async (req, res) => {
+    const { fullname, email, phone, optOutEmails, source } = req.body;
+
+    // Split fullname into firstName and lastName
+    let firstName = "";
+    let lastName = "";
+
+    if (fullname) {
+      const nameParts = fullname.trim().split(/\s+/);
+      firstName = nameParts.shift() || ""; // First word
+      lastName = nameParts.join(" "); // Rest of the name
+    }
+    const dengroBody = {
+      firstName,
+      lastName,
+      email,
+      phone,
+      optOutEmails,
+      source,
+    };
+
     try {
       // Forward the body to Dengro
       const response = await fetch(
@@ -208,7 +228,7 @@ const defineRoutes = (appExpress) => {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(req.body),
+          body: JSON.stringify(dengroBody),
         }
       );
 
