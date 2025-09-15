@@ -200,6 +200,30 @@ const defineRoutes = (appExpress) => {
     }
   );
 
+  appExpress.post("/dengro", async (req, res) => {
+    try {
+      // Forward the body to Dengro
+      const response = await fetch(
+        "https://hooks.dengro.com/capture/8451367e-936d-49ed-8e04-79aed784fb72",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(req.body),
+        }
+      );
+
+      if (!response.ok) {
+        console.error("Dengro hook returned error:", response.statusText);
+        return res.status(500).json({ message: "Failed to send to Dengro." });
+      }
+
+      res.status(200).json({ message: "Sent to Dengro successfully." });
+    } catch (error) {
+      console.error("Error sending to Dengro:", error);
+      res.status(500).json({ message: "Error sending to Dengro." });
+    }
+  });
+
   // Refer A Friend route
   appExpress.post(
     "/refer-a-friend",
@@ -395,57 +419,52 @@ const defineRoutes = (appExpress) => {
     }
   );
 
-  appExpress.post(
-    "/careers",
-    upload.array("attachments"),
-    async (req, res) => {
-      const { body, files } = req;
-      console.log("Received referral form submission:", body); // Log the request body for debugging
-      
+  appExpress.post("/careers", upload.array("attachments"), async (req, res) => {
+    const { body, files } = req;
+    console.log("Received referral form submission:", body); // Log the request body for debugging
 
-      // Filter files to accept only .jpg and .pdf
-      const allowedExtensions = [".jpg", ".jpeg", ".pdf"];
-      const filteredFiles = (files || []).filter((file) => {
-        const ext = path.extname(file.originalname).toLowerCase();
-        return allowedExtensions.includes(ext);
+    // Filter files to accept only .jpg and .pdf
+    const allowedExtensions = [".jpg", ".jpeg", ".pdf"];
+    const filteredFiles = (files || []).filter((file) => {
+      const ext = path.extname(file.originalname).toLowerCase();
+      return allowedExtensions.includes(ext);
+    });
+
+    // Build attachments array for nodemailer
+    const attachments = filteredFiles.map((file) => ({
+      filename: file.originalname,
+      path: file.path,
+    }));
+
+    // Build email body text from form fields
+    const emailText = Object.entries(body)
+      .map(([key, val]) => `${key}: ${val}`)
+      .join("\n");
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: "enquiries@supernovadental.co.uk",
+      subject: `New ${body.referralType || "General"} Referral`,
+      text: emailText,
+      attachments,
+    };
+
+    try {
+      await sendEmailWithAttachments(mailOptions, mailOptions.to);
+
+      // Clean up uploaded files after sending email
+      attachments.forEach((att) => {
+        fs.unlink(att.path, (err) => {
+          if (err) console.error("Error deleting file:", att.path, err);
+        });
       });
 
-      // Build attachments array for nodemailer
-      const attachments = filteredFiles.map((file) => ({
-        filename: file.originalname,
-        path: file.path,
-      }));
-
-      // Build email body text from form fields
-      const emailText = Object.entries(body)
-        .map(([key, val]) => `${key}: ${val}`)
-        .join("\n");
-
-      const mailOptions = {
-        from: process.env.EMAIL_USER,
-        to: "enquiries@supernovadental.co.uk",
-        subject: `New ${body.referralType || "General"} Referral`,
-        text: emailText,
-        attachments,
-      };
-
-      try {
-        await sendEmailWithAttachments(mailOptions, mailOptions.to);
-
-        // Clean up uploaded files after sending email
-        attachments.forEach((att) => {
-          fs.unlink(att.path, (err) => {
-            if (err) console.error("Error deleting file:", att.path, err);
-          });
-        });
-
-        res.status(200).json({ message: "Referral received and email sent." });
-      } catch (error) {
-        console.error("Error sending referral email:", error);
-        res.status(500).json({ error: "Failed to process referral." });
-      }
+      res.status(200).json({ message: "Referral received and email sent." });
+    } catch (error) {
+      console.error("Error sending referral email:", error);
+      res.status(500).json({ error: "Failed to process referral." });
     }
-  );
+  });
 
   // // Health check route (simple response, no retryFetch)
   // appExpress.get("/health", (req, res) => {
