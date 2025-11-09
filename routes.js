@@ -3,33 +3,34 @@ const router = express.Router();
 const { sendEmail } = require("./email");
 require("dotenv").config();
 
-/**
- * Truck placement route (from before)
- */
-router.post("/place-truck", async (req, res) => {
-  try {
-    const {
-      fullname,
-      companyname,
-      email,
-      phone,
-      location,
-      availableFrom,
-      availableUntil,
-      message,
-      optOutEmails,
-      region,
-    } = req.body;
+const defineRoutes = (app) => {
+  /**
+   * Truck placement route (from before)
+   */
+  app.post("/place-truck", async (req, res) => {
+    try {
+      const {
+        fullname,
+        companyname,
+        email,
+        phone,
+        location,
+        availableFrom,
+        availableUntil,
+        message,
+        optOutEmails,
+        region,
+      } = req.body;
 
-    if (!fullname || !email || !location || !availableFrom) {
-      return res.status(400).json({ error: "Missing required fields" });
-    }
+      if (!fullname || !email || !location || !availableFrom) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
 
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: "traffic@logic-freight.co.uk",
-      subject: `New Truck Placement – ${fullname} (${region || "UK"})`,
-      html: `
+      const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: "traffic@logic-freight.co.uk",
+        subject: `New Truck Placement – ${fullname} (${region || "UK"})`,
+        html: `
         <h2>New Truck Placement Submission</h2>
         <p><strong>Full Name:</strong> ${fullname}</p>
         <p><strong>Company:</strong> ${companyname || "N/A"}</p>
@@ -46,16 +47,16 @@ router.post("/place-truck", async (req, res) => {
         <hr />
         <p><em>Submitted at ${new Date().toLocaleString()}</em></p>
       `,
-    };
+      };
 
-    await sendEmail(mailOptions, email);
+      await sendEmail(mailOptions, email);
 
-    if (!optOutEmails) {
-      const confirmationMail = {
-        from: process.env.EMAIL_USER,
-        to: email,
-        subject: "Thank you for your truck placement – Logic Freight",
-        html: `
+      if (!optOutEmails) {
+        const confirmationMail = {
+          from: process.env.EMAIL_USER,
+          to: email,
+          subject: "Thank you for your truck placement – Logic Freight",
+          html: `
           <h2>Thank you, ${fullname}!</h2>
           <p>We’ve received your truck placement details for ${
             region || "the UK"
@@ -66,36 +67,36 @@ router.post("/place-truck", async (req, res) => {
             You can opt out of future updates at any time.
           </p>
         `,
-      };
-      await sendEmail(confirmationMail, email);
+        };
+        await sendEmail(confirmationMail, email);
+      }
+
+      return res
+        .status(200)
+        .json({ message: "Truck placement submitted successfully." });
+    } catch (error) {
+      console.error("Error submitting truck placement:", error);
+      return res.status(500).json({ error: "Internal server error" });
     }
+  });
 
-    return res
-      .status(200)
-      .json({ message: "Truck placement submitted successfully." });
-  } catch (error) {
-    console.error("Error submitting truck placement:", error);
-    return res.status(500).json({ error: "Internal server error" });
-  }
-});
+  /**
+   * Partner join route (for PartnerJoinForm)
+   */
+  app.post("/partner-join", async (req, res) => {
+    try {
+      const { fullname, email, phoneNumber, optOut, region } = req.body;
 
-/**
- * Partner join route (for PartnerJoinForm)
- */
-router.post("/partner-join", async (req, res) => {
-  try {
-    const { fullname, email, phoneNumber, optOut, region } = req.body;
+      if (!fullname || !email || !phoneNumber) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
 
-    if (!fullname || !email || !phoneNumber) {
-      return res.status(400).json({ error: "Missing required fields" });
-    }
-
-    // --- Internal notification to Logic Freight team ---
-    const internalMail = {
-      from: process.env.EMAIL_USER,
-      to: "partners@logic-freight.co.uk",
-      subject: `New Partner Signup – ${fullname} (${region || "UK"})`,
-      html: `
+      // --- Internal notification to Logic Freight team ---
+      const internalMail = {
+        from: process.env.EMAIL_USER,
+        to: "partners@logic-freight.co.uk",
+        subject: `New Partner Signup – ${fullname} (${region || "UK"})`,
+        html: `
         <h2>New Partner Join Submission</h2>
         <p><strong>Full Name:</strong> ${fullname}</p>
         <p><strong>Email:</strong> ${email}</p>
@@ -105,17 +106,17 @@ router.post("/partner-join", async (req, res) => {
         <hr />
         <p><em>Submitted at ${new Date().toLocaleString()}</em></p>
       `,
-    };
+      };
 
-    await sendEmail(internalMail, email);
+      await sendEmail(internalMail, email);
 
-    // --- Optional confirmation email to partner ---
-    if (!optOut) {
-      const confirmationMail = {
-        from: process.env.EMAIL_USER,
-        to: email,
-        subject: "Welcome to the Logic Freight Partner Network",
-        html: `
+      // --- Optional confirmation email to partner ---
+      if (!optOut) {
+        const confirmationMail = {
+          from: process.env.EMAIL_USER,
+          to: email,
+          subject: "Welcome to the Logic Freight Partner Network",
+          html: `
           <div style="font-family: Arial, sans-serif; color: #222;">
             <h2 style="color: #1a1a1a;">Welcome aboard, ${fullname}!</h2>
             <p>Thank you for joining the <strong>Logic Freight Partner Network</strong>.</p>
@@ -130,16 +131,17 @@ router.post("/partner-join", async (req, res) => {
             </p>
           </div>
         `,
-      };
+        };
 
-      await sendEmail(confirmationMail, email);
+        await sendEmail(confirmationMail, email);
+      }
+
+      return res.status(200).json({ message: "Partner joined successfully." });
+    } catch (error) {
+      console.error("Error submitting partner join form:", error);
+      return res.status(500).json({ error: "Internal server error" });
     }
+  });
+};
 
-    return res.status(200).json({ message: "Partner joined successfully." });
-  } catch (error) {
-    console.error("Error submitting partner join form:", error);
-    return res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-module.exports = router;
+module.exports = { defineRoutes };
