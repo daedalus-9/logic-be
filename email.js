@@ -10,20 +10,38 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-const sendEmailReceipt = async (referrerName, to, name, phone) => {
+/**
+ * Send a confirmation email to a partner or truck placement contact
+ */
+const sendEmailReceipt = async (to, name, phone, purpose = "partner") => {
   const logoUrl =
-    "https://firebasestorage.googleapis.com/v0/b/supernova-dental.appspot.com/o/favicon.ico?alt=media&token=ec16f0f4-6447-4d51-8f75-884db512dd75";
+    "https://firebasestorage.googleapis.com/v0/b/logic-freight.appspot.com/o/logicfreight-logo.png?alt=media"; // replace with your hosted logo
 
-  const instagramLink = "https://www.instagram.com/supernova.dental";
-  const facebookLink = "https://www.facebook.com/profile.php?id=61567279201971";
+  const linkedinLink = "https://www.linkedin.com/company/logicfreight";
+  const facebookLink = "https://www.facebook.com/LogicFreight";
 
-  const instagramLogoUrl =
-    "https://firebasestorage.googleapis.com/v0/b/supernova-dental.appspot.com/o/instaLogo.png?alt=media&token=6de73b4a-5305-4607-be13-24f5195387e6";
+  const linkedinLogoUrl =
+    "https://firebasestorage.googleapis.com/v0/b/logic-freight.appspot.com/o/linkedin.png?alt=media";
   const facebookLogoUrl =
-    "https://firebasestorage.googleapis.com/v0/b/supernova-dental.appspot.com/o/fbLogo.png?alt=media&token=989e5762-b8d6-4894-aeae-fc54fac74c58";
+    "https://firebasestorage.googleapis.com/v0/b/logic-freight.appspot.com/o/facebook.png?alt=media";
+
+  const subjectLine =
+    purpose === "partner"
+      ? "Welcome to the Logic Freight Partner Network"
+      : "Thank you for your Truck Placement";
+
+  const mainMessage =
+    purpose === "partner"
+      ? `<p>Dear ${name},</p>
+         <p>Thank you for joining the <strong>Logic Freight Partner Network</strong>.</p>
+         <p>We’re thrilled to collaborate and help you move efficiently across the UK and Europe.</p>
+         <p>Our team will review your details and reach out shortly.</p>`
+      : `<p>Dear ${name},</p>
+         <p>Thank you for submitting your truck availability with <strong>Logic Freight</strong>.</p>
+         <p>Our traffic team has received your details and will contact you soon to coordinate routes.</p>`;
 
   const htmlContent = `
-    <html>
+  <html>
     <head>
       <style>
         * {
@@ -33,168 +51,124 @@ const sendEmailReceipt = async (referrerName, to, name, phone) => {
           font-family: Arial, sans-serif;
           margin: 0;
           padding: 0;
-          color: #333;
-          overflow-x: hidden;
+          color: #222;
+          background-color: #f7f7f7;
         }
         .container {
-          width: 100%;
           max-width: 600px;
-          margin: 20px auto;
-          padding: 20px;
-          border: 1px solid #ddd;
+          margin: 30px auto;
+          padding: 30px;
+          background-color: #ffffff;
           border-radius: 8px;
-          background-color: #f9f9f9;
+          border: 1px solid #ddd;
           text-align: center;
-          box-sizing: border-box;
-        }
-        h1 {
-          color: #a4693d;
-          font-size: 24px;
-          margin-top: 0;
-          text-align: center;
-        }
-        .footer {
-          margin-top: 20px;
-          margin-bottom: 20px;
-          font-size: 0.9em;
-          color: #777;
-          text-align: center;
-        }
-        .logo {
-          text-align: center;
-          margin-bottom: 20px;
         }
         .logo img {
-          max-width: 120px;
+          max-width: 160px;
           height: auto;
-          display: block;
-          margin: 0 auto;
+          margin-bottom: 20px;
         }
-        img {
-          max-width: 100%;
-          height: auto;
-          display: block;
+        h1 {
+          color: #1a1a1a;
+          font-size: 24px;
+          margin-bottom: 20px;
+        }
+        p {
+          line-height: 1.6;
+          text-align: left;
+          font-size: 16px;
+        }
+        .cta {
+          margin-top: 30px;
+          display: inline-block;
+          background-color: #0a0a0a;
+          color: #fff;
+          text-decoration: none;
+          padding: 14px 28px;
+          font-size: 16px;
+          border-radius: 6px;
+          font-weight: 500;
         }
         .social-links {
-          text-align: center;
           margin-top: 40px;
-          margin-bottom: 40px;
         }
         .social-links a {
           display: inline-block;
-          margin-right: 20px;
+          margin-right: 16px;
         }
         .social-links img {
-          width: 40px;
-          height: 40px;
+          width: 36px;
+          height: 36px;
           transition: transform 0.3s;
         }
-        .text-content {
-          text-align: left;
-          padding: 10px 20px;
+        .footer {
+          margin-top: 40px;
+          font-size: 14px;
+          color: #777;
         }
       </style>
     </head>
     <body>
       <div class="container">
         <div class="logo">
-          <img src="${logoUrl}" alt="Supernova Dental Logo" />
+          <img src="${logoUrl}" alt="Logic Freight Logo" />
         </div>
-        <h1>Thank You for Signing Up!</h1>
-        <div class="text-content">
-          <p>Dear ${name},</p>
-          <p>Thank you for your enquiry; we’re excited to help you achieve your Supernova smile!</p>
-          <p>We have received the following details and will reach out to you soon to get you booked in:</p>
-          ${
-            referrerName !== "NoFriendReferral"
-              ? `<p><strong>Referrer Name:</strong> ${referrerName}</p>`
-              : ""
-          }
-          <p><strong>Full Name:</strong> ${name}</p>
-          <p><strong>Phone Number:</strong> ${phone}</p>
-          <br/>
-          <p>Best regards, <br> Supernova Dental Team</p>
-          </div>
+        <h1>${subjectLine}</h1>
+        ${mainMessage}
+        <p><strong>Phone Number:</strong> ${phone}</p>
         <br/>
-        <p style="margin-bottom: 10px; font-size: 16px;">Prefer to book yourself in? Use our patient portal by pressing the button below:</p>
-        <div style="text-align: center; margin-bottom: 30px; max-width: 100%; overflow-x: hidden;">
-          <a 
-            href="https://supernova.portal.dental" 
-            target="_blank" 
-            style="display: inline-block; background-color: #a4693d; color: #fff; text-decoration: none; padding: 14px 28px; font-size: 16px; border-radius: 6px; font-weight: 500;"
-          >
-            Book Now!
-          </a>
-        </div>
-          <div class="social-links">
-          <p>Stay connected with us on social media!</p>
-          <a href="${instagramLink}" target="_blank">
-            <img src="${instagramLogoUrl}" alt="Instagram" />
+        <p>Best regards, <br/> The Logic Freight Team</p>
+        <div class="social-links">
+          <p>Follow us for updates:</p>
+          <a href="${linkedinLink}" target="_blank">
+            <img src="${linkedinLogoUrl}" alt="LinkedIn" />
           </a>
           <a href="${facebookLink}" target="_blank">
             <img src="${facebookLogoUrl}" alt="Facebook" />
           </a>
         </div>
         <div class="footer">
-          <p>If you have any questions, feel free to contact us at enquiries@supernovadental.co.uk</p>
+          <p>If you have any questions, contact us at <a href="mailto:partners@logic-freight.co.uk">partners@logic-freight.co.uk</a></p>
+          <p>You can opt out of partner communications at any time.</p>
         </div>
       </div>
     </body>
-    </html>
+  </html>
   `;
 
   const mailOptions = {
     from: process.env.EMAIL_USER,
     to,
-    subject: "Supernova Dental Signup Confirmation",
+    subject: subjectLine,
     html: htmlContent,
   };
 
   try {
     await transporter.sendMail(mailOptions);
-    console.log("Receipt email sent successfully.");
+    console.log(`Receipt email sent successfully to ${to}`);
   } catch (error) {
-    console.error("Error sending email receipt:", error);
+    console.error("Error sending Logic Freight receipt email:", error);
   }
 };
 
-// Recursive function to attempt to send 5 times
+// Retryable generic email sender
 const sendEmail = async (mailOptions, email, retries = 0) => {
   try {
     await transporter.sendMail(mailOptions);
-    console.log("Email sent");
+    console.log("Email sent successfully.");
   } catch (error) {
-    console.log("*** ERROR ***", error?.message);
+    console.error("*** ERROR SENDING EMAIL ***", error?.message);
     if (retries < 5) {
-      const fiveSecondsToTwentySecondsInMilliSeconds = getRandomInt(
-        5000,
-        20000
-      );
-      // Wait for the delay
-      await wait(fiveSecondsToTwentySecondsInMilliSeconds);
-      // make recursive call to sendEmail
+      const delayMs = getRandomInt(5000, 20000);
+      await wait(delayMs);
       return sendEmail(mailOptions, email, retries + 1);
     } else {
-      console.log("Failed to send email after 5 attempts");
-
-      // // Send SMS notification
-      // const smsMessage = `Hey Adam, someone just failed sending an email to you after 5 attempts. Email: ${email}. Check your database to see more information.`;
-      // sendSMS(smsMessage);
-      // // Store email in the database
-      // saveEmailToDatabase(mailOptions);
-
-      // send error
+      console.error("Failed to send email after 5 attempts");
       throw error;
     }
   }
 };
 
-/**
- * Sends an email with optional attachments.
- * @param {Object} mailOptions - Nodemailer mail options including attachments array.
- * @param {string} email - Recipient email for logging/retry purposes.
- * @param {number} retries - Internal retry counter.
- */
 const sendEmailWithAttachments = async (mailOptions, email, retries = 0) => {
   try {
     await transporter.sendMail(mailOptions);
