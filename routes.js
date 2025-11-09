@@ -80,34 +80,9 @@ Submitted at: ${new Date().toLocaleString()}
       };
 
       try {
-        await withTimeout(sendEmail(mailOptions), 5000);
+        await sendEmail(mailOptions, process.env.EMAIL_USER);
       } catch (err) {
         console.error("*** ERROR SENDING INTERNAL EMAIL ***", err.message);
-      }
-
-      // --- Confirmation receipt to user (if opted in) ---
-      if (!optOutEmails) {
-        const receiptMail = {
-          from: process.env.EMAIL_USER,
-          to: email,
-          subject: "Thank you for your truck placement – Logic Freight",
-          text: `
-Thank you, ${fullname}!
-
-We’ve received your truck placement details for ${region || "the UK"}.
-Our traffic team will review and contact you shortly.
-
-You can opt out of future updates at any time.
-
-— Logic Freight Team
-          `,
-        };
-
-        try {
-          await withTimeout(sendEmailReceipt(receiptMail), 5000);
-        } catch (err) {
-          console.error("*** ERROR SENDING RECEIPT EMAIL ***", err.message);
-        }
       }
 
       return res
@@ -141,6 +116,8 @@ You can opt out of future updates at any time.
         submittedAt: Timestamp.now(),
       });
 
+      console.log("Partner join data saved to Firestore");
+
       // --- Internal email to Logic Freight team ---
       const internalMail = {
         from: process.env.EMAIL_USER,
@@ -151,38 +128,9 @@ You can opt out of future updates at any time.
       };
 
       try {
-        await sendEmail(internalMail)
+        await sendEmail(internalMail, process.env.EMAIL_USER);
       } catch (err) {
         console.error("*** ERROR SENDING INTERNAL EMAIL ***", err.message);
-      }
-
-      // --- Confirmation receipt to partner ---
-      if (!optOut) {
-        const confirmationMail = {
-          from: process.env.EMAIL_USER,
-          to: email,
-          subject: "Welcome to the Logic Freight Partner Network",
-          text: `
-Welcome aboard, ${fullname}!
-
-Thank you for joining the Logic Freight Partner Network.
-We’ll be in touch shortly to discuss how we can collaborate and keep your trucks moving efficiently across ${
-            region || "the UK"
-          }.
-
-If you have any immediate questions, contact us at partners@logic-freight.co.uk.
-
-You can opt out of partner communications at any time.
-
-— Logic Freight Team
-          `,
-        };
-
-        try {
-          await withTimeout(sendEmailReceipt(confirmationMail), 5000);
-        } catch (err) {
-          console.error("*** ERROR SENDING RECEIPT EMAIL ***", err.message);
-        }
       }
 
       return res.status(200).json({ message: "Partner joined successfully." });
