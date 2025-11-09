@@ -155,16 +155,29 @@ const sendEmailReceipt = async (to, name, phone, purpose = "partner") => {
 // Retryable generic email sender
 const sendEmail = async (mailOptions, email, retries = 0) => {
   try {
-    await transporter.sendMail(mailOptions);
-    console.log("Email sent successfully.");
+    console.log(`Attempt ${retries + 1} to send email to ${email}`);
+    console.log("Email payload:", mailOptions);
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log("Email sent successfully:", info);
+    return info;
   } catch (error) {
-    console.error("*** ERROR SENDING EMAIL ***", error?.message);
+    console.error(`*** ERROR SENDING EMAIL on attempt ${retries + 1} ***`);
+    console.error("Full error object:", error);
+    console.error("Error message:", error?.message);
+    console.error("Error code:", error?.code);
+    console.error("SMTP response:", error?.response);
+
     if (retries < 5) {
       const delayMs = getRandomInt(5000, 20000);
+      console.log(`Retrying in ${delayMs}ms...`);
       await wait(delayMs);
       return sendEmail(mailOptions, email, retries + 1);
     } else {
-      console.error("Failed to send email after 5 attempts");
+      console.error(
+        "Failed to send email after 5 attempts. Payload was:",
+        mailOptions
+      );
       throw error;
     }
   }

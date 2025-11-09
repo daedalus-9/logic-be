@@ -21,6 +21,8 @@ const defineRoutes = (app) => {
    * Truck placement route
    */
   app.post("/place-truck", async (req, res) => {
+    console.log("Received /place-truck request:", JSON.stringify(req.body));
+
     try {
       const {
         fullname,
@@ -36,11 +38,13 @@ const defineRoutes = (app) => {
       } = req.body;
 
       if (!fullname || !email || !location || !availableFrom) {
+        console.warn("Validation failed. Missing required fields.");
         return res.status(400).json({ error: "Missing required fields" });
       }
 
       // --- Save to Firestore ---
       const truckDocRef = doc(collection(db, "truckPlacements"));
+      console.log("Saving truck placement to Firestore...");
       await setDoc(truckDocRef, {
         fullname,
         companyname: companyname || null,
@@ -54,6 +58,10 @@ const defineRoutes = (app) => {
         optOutEmails: !!optOutEmails,
         submittedAt: Timestamp.now(),
       });
+      console.log(
+        "Truck placement saved to Firestore with ID:",
+        truckDocRef.id
+      );
 
       // --- Internal email to Logic Freight team ---
       const mailOptions = {
@@ -79,10 +87,17 @@ Submitted at: ${new Date().toLocaleString()}
         `,
       };
 
+      console.log("Sending internal email with options:", mailOptions);
+
       try {
-        await sendEmail(mailOptions, process.env.EMAIL_USER);
+        await withTimeout(
+          sendEmail(mailOptions, process.env.EMAIL_USER),
+          10000
+        );
+        console.log("Internal email sent successfully.");
       } catch (err) {
-        console.error("*** ERROR SENDING INTERNAL EMAIL ***", err.message);
+        console.error("*** ERROR SENDING INTERNAL EMAIL ***", err);
+        console.error("Email payload was:", mailOptions);
       }
 
       return res
@@ -98,15 +113,47 @@ Submitted at: ${new Date().toLocaleString()}
    * Partner join route
    */
   app.post("/partner-join", async (req, res) => {
+    console.log("Received /partner-join request:", JSON.stringify(req.body));
+
     try {
       const { fullname, email, phoneNumber, optOut, region } = req.body;
 
       if (!fullname || !email || !phoneNumber) {
+        console.warn("Validation failed. Missing required fields.");
         return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      // --- Internal email to Logic Freight team ---
+      const internalMail = {
+        from: process.env.EMAIL_USER,
+        to: process.env.EMAIL_RECIPIENT,
+        subject: `New Partner Signup – ${fullname} (${region || "UK"})`,
+        text: `Partner Join Submission\n-------------------\nFull Name: ${fullname}\nEmail: ${email}\nPhone: ${phoneNumber}\nRegion: ${
+          region || "N/A"
+        }\nOpt-Out: ${
+          optOut ? "Yes" : "No"
+        }\nSubmitted at: ${new Date().toLocaleString()}`,
+      };
+
+      console.log(
+        "Sending partner join internal email with options:",
+        internalMail
+      );
+
+      try {
+        await withTimeout(
+          sendEmail(internalMail, process.env.EMAIL_USER),
+          10000
+        );
+        console.log("Partner join internal email sent successfully.");
+      } catch (err) {
+        console.error("*** ERROR SENDING INTERNAL EMAIL ***", err);
+        console.error("Email payload was:", internalMail);
       }
 
       // --- Save to Firestore ---
       const partnerDocRef = doc(collection(db, "partnerJoins"));
+      console.log("Saving partner join to Firestore...");
       await setDoc(partnerDocRef, {
         fullname,
         email,
@@ -115,23 +162,10 @@ Submitted at: ${new Date().toLocaleString()}
         optOut: !!optOut,
         submittedAt: Timestamp.now(),
       });
-
-      console.log("Partner join data saved to Firestore");
-
-      // --- Internal email to Logic Freight team ---
-      const internalMail = {
-        from: process.env.EMAIL_USER,
-        to: process.env.EMAIL_RECIPIENT,
-        subject: `New Partner Signup – ${fullname} (${region || "UK"})`,
-        text: `hi
-        `,
-      };
-
-      try {
-        await sendEmail(internalMail, process.env.EMAIL_USER);
-      } catch (err) {
-        console.error("*** ERROR SENDING INTERNAL EMAIL ***", err.message);
-      }
+      console.log(
+        "Partner join data saved to Firestore with ID:",
+        partnerDocRef.id
+      );
 
       return res.status(200).json({ message: "Partner joined successfully." });
     } catch (error) {
