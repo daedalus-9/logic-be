@@ -1,10 +1,20 @@
 const express = require("express");
 const router = express.Router();
-const { sendEmail } = require("./email");
+const { sendEmail, sendEmailReceipt } = require("./email");
 const { db } = require("./firebaseConfig");
 require("dotenv").config();
 
 const { doc, setDoc, collection, Timestamp } = require("firebase/firestore");
+
+// Timeout wrapper (prevents hanging if email server delays)
+const withTimeout = (promise, ms) => {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Email send timeout")), ms)
+    ),
+  ]);
+};
 
 const defineRoutes = (app) => {
   /**
@@ -50,46 +60,55 @@ const defineRoutes = (app) => {
         from: process.env.EMAIL_USER,
         to: "traffic@logic-freight.co.uk",
         subject: `New Truck Placement – ${fullname} (${region || "UK"})`,
-        html: `
-          <h2>New Truck Placement Submission</h2>
-          <p><strong>Full Name:</strong> ${fullname}</p>
-          <p><strong>Company:</strong> ${companyname || "N/A"}</p>
-          <p><strong>Email:</strong> ${email}</p>
-          <p><strong>Phone:</strong> ${phone || "N/A"}</p>
-          <p><strong>Truck Location:</strong> ${location}</p>
-          <p><strong>Available From:</strong> ${availableFrom}</p>
-          <p><strong>Available Until:</strong> ${availableUntil || "N/A"}</p>
-          <p><strong>Additional Info:</strong> ${message || "N/A"}</p>
-          <p><strong>Region:</strong> ${region || "N/A"}</p>
-          <p><strong>Opted Out of Marketing:</strong> ${
-            optOutEmails ? "Yes" : "No"
-          }</p>
-          <hr />
-          <p><em>Submitted at ${new Date().toLocaleString()}</em></p>
+        text: `
+New Truck Placement Submission
+------------------------------
+
+Full Name: ${fullname}
+Company: ${companyname || "N/A"}
+Email: ${email}
+Phone: ${phone || "N/A"}
+Truck Location: ${location}
+Available From: ${availableFrom}
+Available Until: ${availableUntil || "N/A"}
+Additional Info: ${message || "N/A"}
+Region: ${region || "N/A"}
+Opted Out of Marketing: ${optOutEmails ? "Yes" : "No"}
+
+Submitted at: ${new Date().toLocaleString()}
         `,
       };
 
-      await sendEmail(mailOptions, email);
+      try {
+        await withTimeout(sendEmail(mailOptions), 5000);
+      } catch (err) {
+        console.error("*** ERROR SENDING INTERNAL EMAIL ***", err.message);
+      }
 
-      // --- Confirmation email to sender ---
+      // --- Confirmation receipt to user (if opted in) ---
+      if (!optOutEmails) {
+        const receiptMail = {
+          from: process.env.EMAIL_USER,
+          to: email,
+          subject: "Thank you for your truck placement – Logic Freight",
+          text: `
+Thank you, ${fullname}!
 
-      const confirmationMail = {
-        from: process.env.EMAIL_USER,
-        to: email,
-        subject: "Thank you for your truck placement – Logic Freight",
-        html: `
-            <h2>Thank you, ${fullname}!</h2>
-            <p>We’ve received your truck placement details for ${
-              region || "the UK"
-            }.</p>
-            <p>Our traffic team will review and contact you shortly.</p>
-            <br/>
-            <p style="font-size: 0.9em; color: #666;">
-              You can opt out of future updates at any time.
-            </p>
+We’ve received your truck placement details for ${region || "the UK"}.
+Our traffic team will review and contact you shortly.
+
+You can opt out of future updates at any time.
+
+— Logic Freight Team
           `,
-      };
-      await sendEmail(confirmationMail, email);
+        };
+
+        try {
+          await withTimeout(sendEmailReceipt(receiptMail), 5000);
+        } catch (err) {
+          console.error("*** ERROR SENDING RECEIPT EMAIL ***", err.message);
+        }
+      }
 
       return res
         .status(200)
@@ -127,46 +146,54 @@ const defineRoutes = (app) => {
         from: process.env.EMAIL_USER,
         to: "partners@logic-freight.co.uk",
         subject: `New Partner Signup – ${fullname} (${region || "UK"})`,
-        html: `
-          <h2>New Partner Join Submission</h2>
-          <p><strong>Full Name:</strong> ${fullname}</p>
-          <p><strong>Email:</strong> ${email}</p>
-          <p><strong>Phone Number:</strong> ${phoneNumber}</p>
-          <p><strong>Region:</strong> ${region || "N/A"}</p>
-          <p><strong>Opted Out of Marketing:</strong> ${
-            optOut ? "Yes" : "No"
-          }</p>
-          <hr />
-          <p><em>Submitted at ${new Date().toLocaleString()}</em></p>
+        text: `
+New Partner Join Submission
+---------------------------
+
+Full Name: ${fullname}
+Email: ${email}
+Phone Number: ${phoneNumber}
+Region: ${region || "N/A"}
+Opted Out of Marketing: ${optOut ? "Yes" : "No"}
+
+Submitted at: ${new Date().toLocaleString()}
         `,
       };
 
-      await sendEmail(internalMail, email);
+      try {
+        await withTimeout(sendEmail(internalMail), 5000);
+      } catch (err) {
+        console.error("*** ERROR SENDING INTERNAL EMAIL ***", err.message);
+      }
 
-      // --- Confirmation email to partner ---
+      // --- Confirmation receipt to partner ---
+      if (!optOut) {
+        const confirmationMail = {
+          from: process.env.EMAIL_USER,
+          to: email,
+          subject: "Welcome to the Logic Freight Partner Network",
+          text: `
+Welcome aboard, ${fullname}!
 
-      const confirmationMail = {
-        from: process.env.EMAIL_USER,
-        to: email,
-        subject: "Welcome to the Logic Freight Partner Network",
-        html: `
-            <div style="font-family: Arial, sans-serif; color: #222;">
-              <h2 style="color: #1a1a1a;">Welcome aboard, ${fullname}!</h2>
-              <p>Thank you for joining the <strong>Logic Freight Partner Network</strong>.</p>
-              <p>We’ll be in touch shortly to discuss how we can collaborate and keep your trucks moving efficiently across ${
-                region || "the UK"
-              }.</p>
-              <p>If you have any immediate questions, feel free to contact us at 
-              <a href="mailto:partners@logic-freight.co.uk">partners@logic-freight.co.uk</a>.</p>
-              <hr />
-              <p style="font-size: 0.9em; color: #666;">
-                You can opt out of partner communications at any time.
-              </p>
-            </div>
+Thank you for joining the Logic Freight Partner Network.
+We’ll be in touch shortly to discuss how we can collaborate and keep your trucks moving efficiently across ${
+            region || "the UK"
+          }.
+
+If you have any immediate questions, contact us at partners@logic-freight.co.uk.
+
+You can opt out of partner communications at any time.
+
+— Logic Freight Team
           `,
-      };
+        };
 
-      await sendEmail(confirmationMail, email);
+        try {
+          await withTimeout(sendEmailReceipt(confirmationMail), 5000);
+        } catch (err) {
+          console.error("*** ERROR SENDING RECEIPT EMAIL ***", err.message);
+        }
+      }
 
       return res.status(200).json({ message: "Partner joined successfully." });
     } catch (error) {
