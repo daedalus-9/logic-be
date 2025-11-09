@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { sendEmail } = require("./email");
+const { db } = require("./firebaseConfig");
 require("dotenv").config();
 
 const { doc, setDoc, collection, Timestamp } = require("firebase/firestore");
