@@ -71,13 +71,13 @@ const defineRoutes = (app) => {
 
       await sendEmail(mailOptions, email);
 
-      // --- Confirmation email to sender (if opted in) ---
-      if (!optOutEmails) {
-        const confirmationMail = {
-          from: process.env.EMAIL_USER,
-          to: email,
-          subject: "Thank you for your truck placement – Logic Freight",
-          html: `
+      // --- Confirmation email to sender ---
+
+      const confirmationMail = {
+        from: process.env.EMAIL_USER,
+        to: email,
+        subject: "Thank you for your truck placement – Logic Freight",
+        html: `
             <h2>Thank you, ${fullname}!</h2>
             <p>We’ve received your truck placement details for ${
               region || "the UK"
@@ -88,9 +88,8 @@ const defineRoutes = (app) => {
               You can opt out of future updates at any time.
             </p>
           `,
-        };
-        await sendEmail(confirmationMail, email);
-      }
+      };
+      await sendEmail(confirmationMail, email);
 
       return res
         .status(200)
@@ -144,13 +143,13 @@ const defineRoutes = (app) => {
 
       await sendEmail(internalMail, email);
 
-      // --- Confirmation email to partner (if opted in) ---
-      if (!optOut) {
-        const confirmationMail = {
-          from: process.env.EMAIL_USER,
-          to: email,
-          subject: "Welcome to the Logic Freight Partner Network",
-          html: `
+      // --- Confirmation email to partner ---
+
+      const confirmationMail = {
+        from: process.env.EMAIL_USER,
+        to: email,
+        subject: "Welcome to the Logic Freight Partner Network",
+        html: `
             <div style="font-family: Arial, sans-serif; color: #222;">
               <h2 style="color: #1a1a1a;">Welcome aboard, ${fullname}!</h2>
               <p>Thank you for joining the <strong>Logic Freight Partner Network</strong>.</p>
@@ -165,10 +164,9 @@ const defineRoutes = (app) => {
               </p>
             </div>
           `,
-        };
+      };
 
-        await sendEmail(confirmationMail, email);
-      }
+      await sendEmail(confirmationMail, email);
 
       return res.status(200).json({ message: "Partner joined successfully." });
     } catch (error) {
