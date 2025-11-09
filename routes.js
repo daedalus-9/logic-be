@@ -144,24 +144,14 @@ You can opt out of future updates at any time.
       // --- Internal email to Logic Freight team ---
       const internalMail = {
         from: process.env.EMAIL_USER,
-        to: "partners@logic-freight.co.uk",
+        to: process.env.EMAIL_RECIPIENT,
         subject: `New Partner Signup – ${fullname} (${region || "UK"})`,
-        text: `
-New Partner Join Submission
----------------------------
-
-Full Name: ${fullname}
-Email: ${email}
-Phone Number: ${phoneNumber}
-Region: ${region || "N/A"}
-Opted Out of Marketing: ${optOut ? "Yes" : "No"}
-
-Submitted at: ${new Date().toLocaleString()}
+        text: `hi
         `,
       };
 
       try {
-        await withTimeout(sendEmail(internalMail), 5000);
+        await sendEmail(internalMail)
       } catch (err) {
         console.error("*** ERROR SENDING INTERNAL EMAIL ***", err.message);
       }
